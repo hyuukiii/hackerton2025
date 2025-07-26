@@ -1,5 +1,4 @@
 // App.tsx
-import 'react-native-gesture-handler';
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -15,29 +14,33 @@ SplashScreen.preventAutoHideAsync();
 
 export default function App() {
   const [isReady, setIsReady] = useState(false);
+  const [showLoading, setShowLoading] = useState(true); // 로딩 화면 표시 상태 추가
 
   useEffect(() => {
     async function prepare() {
       try {
-        // 여기서 필요한 초기화 작업 수행
-        // - 폰트 로딩
-        // - 토큰 확인
-        // - 초기 설정 로드
+        // 초기화 작업
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // 최소 2초는 로딩 화면 표시 (UX)
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // 스플래시 스크린 숨기기
+        await SplashScreen.hideAsync();
+
+        // 로딩 화면을 3초간 표시
+        setTimeout(() => {
+          setShowLoading(false);
+        }, 3000);
+
       } catch (e) {
         console.warn(e);
       } finally {
         setIsReady(true);
-        await SplashScreen.hideAsync();
       }
     }
 
     prepare();
   }, []);
 
-  if (!isReady) {
+  if (!isReady || showLoading) {
     return <LoadingScreen />;
   }
 
