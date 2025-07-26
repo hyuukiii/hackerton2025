@@ -2,6 +2,13 @@ spring:
   application:
     name: healthcare-hackathon
 
+  # Spring Security 완전 비활성화 (해커톤용)
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration
+
   datasource:
     url: jdbc:mysql://localhost:3306/healthcare_db?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
     username: root
@@ -31,7 +38,7 @@ spring:
 
   # Jackson 설정
   jackson:
-    property-naming-strategy: SNAKE_CASE
+    # property-naming-strategy: SNAKE_CASE  # 이 줄을 주석처리 또는 삭제!
     serialization:
       write-dates-as-timestamps: false
     time-zone: Asia/Seoul
@@ -41,12 +48,6 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
-
-  # Spring Security 기본 비활성화 (개발용)
-  security:
-    user:
-      name: admin
-      password: admin
 
 # MyBatis 설정
 mybatis:
@@ -78,6 +79,8 @@ cors:
     - http://localhost:3000
     - http://localhost:19006
     - http://localhost:8081
+    - http://10.0.2.2:8082  # Android 에뮬레이터
+    - http://10.10.180.66:8082  # 개발 PC
   allowed-methods:
     - GET
     - POST
@@ -87,6 +90,8 @@ cors:
   allowed-headers:
     - Authorization
     - Content-Type
+    - Accept
+    - Origin
   exposed-headers:
     - Authorization
 
@@ -111,6 +116,8 @@ management:
   endpoint:
     health:
       show-details: always
+  security:
+    enabled: false  # Actuator 보안 비활성화
 
 # gpt api 설정
 chatgpt:
