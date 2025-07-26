@@ -69,6 +69,8 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
     }
   };
 
+  // SimpleAuthScreen.tsx의 handleSimpleAuth 함수 수정
+
   const handleSimpleAuth = async () => {
     if (!userName || !birthDate || !phoneNumber) {
       Alert.alert('알림', '모든 정보를 입력해주세요.');
@@ -80,6 +82,17 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
       Alert.alert('알림', '생년월일을 올바르게 입력해주세요. (예: 00.01.01)');
       return;
     }
+
+    // 6자리 생년월일을 8자리로 변환 (YYMMDD -> YYYYMMDD)
+    const convertToFullYear = (yymmdd: string) => {
+      const yy = parseInt(yymmdd.substring(0, 2));
+      const century = yy > 50 ? 1900 : 2000; // 50년 기준으로 1900년대 / 2000년대 구분
+      const fullYear = century + yy;
+      return fullYear + yymmdd.substring(2); // YYYYMMDD
+    };
+
+    const fullBirthDate = convertToFullYear(birthNumbers);
+    console.log('변환된 생년월일:', fullBirthDate); // 디버깅용
 
     const phoneNumbers = phoneNumber.replace(/[^0-9]/g, '');
     if (phoneNumbers.length !== 11) {
@@ -95,7 +108,7 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
       console.log('간편인증 요청 시작');
       const authResponse = await api.post('/auth/request', {
         userName,
-        birthDate: birthNumbers,
+        birthDate: fullBirthDate, // 8자리로 변환된 생년월일 사용
         userCellphoneNumber: phoneNumbers,
       });
 
@@ -115,7 +128,7 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
         password,
         authMethod,
         userName,
-        birthDate: birthNumbers,
+        birthDate: birthNumbers, // 원본 6자리 저장 (UI 표시용)
         phoneNumber: phoneNumbers,
       }));
 
@@ -126,7 +139,7 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
       navigation.navigate('SimpleAuthLoading', {
         authData: authResponse,
         userName,
-        birthDate: birthNumbers,
+        birthDate: birthNumbers, // UI용 6자리
         phoneNumber: phoneNumbers,
       });
 
