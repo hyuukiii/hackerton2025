@@ -5,15 +5,10 @@ import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import LoginSuccessScreen from '../screens/auth/LoginSuccessScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
+import HomeScreen from '../screens/home/HomeScreen';
 
 // 임시 화면들
 import { View, Text, StyleSheet } from 'react-native';
-
-const HomeScreen = () => (
-  <View style={styles.container}>
-    <Text style={styles.text}>홈 화면 - 구현 예정</Text>
-  </View>
-);
 
 const FindIdScreen = () => (
   <View style={styles.container}>
@@ -24,6 +19,30 @@ const FindIdScreen = () => (
 const FindPasswordScreen = () => (
   <View style={styles.container}>
     <Text style={styles.text}>비밀번호 찾기 - 구현 예정</Text>
+  </View>
+);
+
+const PrescriptionHistoryScreen = () => (
+  <View style={styles.container}>
+    <Text style={styles.text}>약물 처방 내역 - 구현 예정</Text>
+  </View>
+);
+
+const MedicalHistoryScreen = () => (
+  <View style={styles.container}>
+    <Text style={styles.text}>병력 관리 - 구현 예정</Text>
+  </View>
+);
+
+const HealthCheckupScreen = () => (
+  <View style={styles.container}>
+    <Text style={styles.text}>건강검진 내역 조회 - 구현 예정</Text>
+  </View>
+);
+
+const EditHealthInfoScreen = () => (
+  <View style={styles.container}>
+    <Text style={styles.text}>건강정보 수정 - 구현 예정</Text>
   </View>
 );
 
@@ -44,6 +63,10 @@ const AppNavigator = () => {
       <Stack.Screen name="FindId" component={FindIdScreen} />
       <Stack.Screen name="FindPassword" component={FindPasswordScreen} />
       <Stack.Screen name="Main" component={HomeScreen} />
+      <Stack.Screen name="PrescriptionHistory" component={PrescriptionHistoryScreen} />
+      <Stack.Screen name="MedicalHistory" component={MedicalHistoryScreen} />
+      <Stack.Screen name="HealthCheckup" component={HealthCheckupScreen} />
+      <Stack.Screen name="EditHealthInfo" component={EditHealthInfoScreen} />
     </Stack.Navigator>
   );
 };

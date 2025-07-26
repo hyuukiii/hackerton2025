@@ -74,7 +74,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           }
 
           await AsyncStorage.setItem('authToken', 'temp-token');
-          await AsyncStorage.setItem('userData', JSON.stringify({ userId }));
+          await AsyncStorage.setItem('userData', JSON.stringify({
+            userId,
+            name: '김춘식' // 임시로 이름 설정
+          }));
 
           // 로그인 성공 - 로딩 화면으로 이동
           navigation.replace('LoginSuccess');
