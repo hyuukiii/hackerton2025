@@ -1,5 +1,5 @@
 // src/screens/auth/LoginScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,164 +8,326 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
+  ScrollView,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../services/api';
 
 interface LoginScreenProps {
-  navigation: any; // 타입은 나중에 정확히 정의
+  navigation: any;
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [userId, setUserId] = useState('');
+  const [password, setPassword] = useState('');
+  const [autoLogin, setAutoLogin] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // 자동 로그인 확인
+  useEffect(() => {
+    checkAutoLogin();
+  }, []);
+
+  const checkAutoLogin = async () => {
+    try {
+      const savedAutoLogin = await AsyncStorage.getItem('autoLogin');
+      const savedToken = await AsyncStorage.getItem('authToken');
+
+      if (savedAutoLogin === 'true' && savedToken) {
+        // 자동 로그인 처리
+        navigation.replace('Main');
+      }
+    } catch (error) {
+      console.error('Auto login check failed:', error);
+    }
+  };
 
   const handleLogin = async () => {
-    if (!phoneNumber || phoneNumber.length < 10) {
-      Alert.alert('오류', '올바른 전화번호를 입력해주세요.');
+    if (!userId) {
+      setErrorMessage('아이디를 입력해주세요.');
+      return;
+    }
+
+    if (!password) {
+      setErrorMessage('비밀번호를 입력해주세요.');
       return;
     }
 
     setLoading(true);
+    setErrorMessage('');
+
     try {
       // 임시 처리 (백엔드 없이 테스트)
       if (__DEV__) {
-        await new Promise(resolve => setTimeout(resolve, 1000)); // 로딩 시뮬레이션
-        await AsyncStorage.setItem('authToken', 'temp-token');
-        await AsyncStorage.setItem('userData', JSON.stringify({ phoneNumber }));
-        navigation.replace('Main');
-        return;
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // 테스트용 계정
+        if (userId === 'guest1234' && password === 'password') {
+          // 자동 로그인 설정 저장
+          if (autoLogin) {
+            await AsyncStorage.setItem('autoLogin', 'true');
+          } else {
+            await AsyncStorage.removeItem('autoLogin');
+          }
+
+          await AsyncStorage.setItem('authToken', 'temp-token');
+          await AsyncStorage.setItem('userData', JSON.stringify({ userId }));
+
+          // 로그인 성공 - 로딩 화면으로 이동
+          navigation.replace('LoginSuccess');
+          return;
+        } else if (userId === 'guest12345') {
+          setErrorMessage('존재하지 않는 아이디입니다.');
+          return;
+        } else if (userId === 'guest1234' && password !== 'password') {
+          setErrorMessage('잘못된 비밀번호입니다.');
+          return;
+        } else {
+          setErrorMessage('아이디 또는 비밀번호가 올바르지 않습니다.');
+          return;
+        }
       }
 
       // 실제 API 호출 (백엔드 구현 후 사용)
       const response = await api.post('/auth/login', {
-        phoneNumber: phoneNumber.replace(/-/g, ''),
+        userId,
+        password,
       });
 
-      // 토큰 저장
+      if (autoLogin) {
+        await AsyncStorage.setItem('autoLogin', 'true');
+      }
+
       await AsyncStorage.setItem('authToken', response.data.token);
       await AsyncStorage.setItem('userData', JSON.stringify(response.data.user));
 
-      // 홈 화면으로 이동
-      navigation.replace('Main');
-    } catch (error) {
-      Alert.alert('로그인 실패', '다시 시도해주세요.');
+      navigation.replace('LoginSuccess');
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        setErrorMessage('존재하지 않는 아이디입니다.');
+      } else if (error.response?.status === 401) {
+        setErrorMessage('잘못된 비밀번호입니다.');
+      } else {
+        setErrorMessage('로그인 중 오류가 발생했습니다.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  const handleFindId = () => {
+    // 아이디 찾기 화면으로 이동
+    navigation.navigate('FindId');
+  };
+
+  const handleFindPassword = () => {
+    // 비밀번호 찾기 화면으로 이동
+    navigation.navigate('FindPassword');
+  };
+
   return (
-    <LinearGradient
-      colors={['#667eea', '#764ba2']}
-      style={styles.container}
-    >
+    <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <View style={styles.content}>
-          <Text style={styles.title}>Care Plus+</Text>
-          <Text style={styles.subtitle}>환자용 앱</Text>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.content}>
+            {/* 아이디 입력 */}
+            <View style={styles.inputSection}>
+              <Text style={styles.label}>아이디</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="guest1234"
+                placeholderTextColor="#999"
+                value={userId}
+                onChangeText={(text) => {
+                  setUserId(text);
+                  setErrorMessage('');
+                }}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
 
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="전화번호 입력 (- 없이)"
-              placeholderTextColor="#rgba(255,255,255,0.7)"
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-              keyboardType="phone-pad"
-              maxLength={11}
-            />
+            {/* 비밀번호 입력 */}
+            <View style={styles.inputSection}>
+              <Text style={styles.label}>비밀번호</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="••••••••"
+                placeholderTextColor="#999"
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  setErrorMessage('');
+                }}
+                secureTextEntry
+              />
+            </View>
+
+            {/* 에러 메시지 */}
+            {errorMessage ? (
+              <Text style={styles.errorMessage}>{errorMessage}</Text>
+            ) : null}
+
+            {/* 자동 로그인 체크박스 */}
+            <TouchableOpacity
+              style={styles.checkboxContainer}
+              onPress={() => setAutoLogin(!autoLogin)}
+            >
+              <View style={[styles.checkbox, autoLogin && styles.checkboxChecked]}>
+                {autoLogin && (
+                  <MaterialIcons name="check" size={16} color="white" />
+                )}
+              </View>
+              <Text style={styles.checkboxLabel}>자동 로그인</Text>
+            </TouchableOpacity>
+
+            {/* 아이디 찾기 / 비밀번호 찾기 */}
+            <View style={styles.linkContainer}>
+              <TouchableOpacity onPress={handleFindId}>
+                <Text style={styles.linkText}>아이디 찾기</Text>
+              </TouchableOpacity>
+              <Text style={styles.divider}>|</Text>
+              <TouchableOpacity onPress={handleFindPassword}>
+                <Text style={styles.linkText}>비밀번호 찾기</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* 로그인 버튼 */}
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>
+                {loading ? '로그인 중...' : '로그인'}
+              </Text>
+            </TouchableOpacity>
           </View>
-
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>
-              {loading ? '로그인 중...' : '로그인'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.registerButton}
-            onPress={() => navigation.navigate('Register')}
-          >
-            <Text style={styles.registerText}>
-              처음이신가요? 회원가입
-            </Text>
-          </TouchableOpacity>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
-    </LinearGradient>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f5f5f5',
   },
   keyboardView: {
     flex: 1,
   },
-  content: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
   },
-  title: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: 'white',
+  content: {
+    paddingHorizontal: 30,
+    paddingVertical: 40,
+  },
+  inputSection: {
+    marginBottom: 25,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
     marginBottom: 10,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: 'white',
-    opacity: 0.9,
-    marginBottom: 50,
-  },
-  inputContainer: {
-    width: '100%',
-    marginBottom: 20,
+    textAlign: 'center',
   },
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 10,
-    padding: 15,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 18,
     fontSize: 16,
-    color: 'white',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    color: '#333',
+    textAlign: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+  },
+  errorMessage: {
+    color: '#FF3B30',
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: -15,
+    marginBottom: 15,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 20,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: '#667eea',
+    borderRadius: 4,
+    marginRight: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#667eea',
+    borderColor: '#667eea',
+  },
+  checkboxLabel: {
+    fontSize: 16,
+    color: '#333',
+  },
+  linkContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  linkText: {
+    fontSize: 14,
+    color: '#666',
+    paddingHorizontal: 10,
+  },
+  divider: {
+    fontSize: 14,
+    color: '#ccc',
   },
   button: {
-    backgroundColor: 'white',
-    paddingVertical: 15,
-    paddingHorizontal: 50,
-    borderRadius: 25,
-    marginBottom: 20,
+    backgroundColor: '#667eea',
+    paddingVertical: 18,
+    borderRadius: 12,
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#667eea',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
   },
   buttonDisabled: {
-    opacity: 0.7,
+    backgroundColor: '#B8B8D1',
+    shadowOpacity: 0.1,
   },
   buttonText: {
-    color: '#667eea',
+    color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
-  },
-  registerButton: {
-    marginTop: 10,
-  },
-  registerText: {
-    color: 'white',
-    fontSize: 16,
-    textDecorationLine: 'underline',
   },
 });
 
