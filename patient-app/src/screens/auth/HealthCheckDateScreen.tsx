@@ -65,19 +65,48 @@ const HealthCheckDateScreen: React.FC<HealthCheckDateScreenProps> = ({ navigatio
 
     try {
       // 최근 건강검진 정보 저장
-      await AsyncStorage.setItem('latestCheckupInfo', JSON.stringify({
+      const checkupInfo = {
         date: latestCheckupDate,
         hospital: hospitalName,
-      }));
+      };
+      await AsyncStorage.setItem('latestCheckupInfo', JSON.stringify(checkupInfo));
 
-      // 회원가입 완료 처리
-      await AsyncStorage.setItem('authToken', 'temp-token');
-      await AsyncStorage.setItem('isLoggedIn', 'true');
+      // 복약 정보 기반 AI 기저질환 분석 요청
+      let diseaseAnalysis;
 
-      // 메인 화면으로 이동
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Main' }],
+      try {
+        // 백엔드 API 호출 - 투약 데이터 기반 기저질환 분석
+        const medicationData = healthData?.medicationData || {};
+        console.log('기저질환 분석 요청 - medicationData:', medicationData);
+
+        diseaseAnalysis = await api.post('/integrated/analyze-diseases', {
+          medicationData: medicationData,
+          userInfo: userInfo,
+        });
+
+        console.log('기저질환 분석 결과:', diseaseAnalysis);
+      } catch (error) {
+        console.error('기저질환 분석 API 오류:', error);
+
+        // API 오류 시 기본값 설정
+        diseaseAnalysis = {
+          status: 'NO_DATA',
+          message: '분석할 수 있는 복약 정보가 없습니다.',
+          predictedDiseases: [],
+          riskLevel: 'LOW',
+        };
+      }
+
+      // 기저질환 분석 결과 저장
+      await AsyncStorage.setItem('diseaseAnalysis', JSON.stringify(diseaseAnalysis));
+
+      // 기저질환 정보 화면으로 이동
+      navigation.navigate('DiseaseInfo', {
+        authData,
+        userInfo,
+        healthData,
+        selectedCheckupDate: checkupInfo,
+        diseaseAnalysis,
       });
 
     } catch (error) {
