@@ -66,34 +66,44 @@ export type RootStackParamList = {
   MedicalHistory: undefined;
   HealthCheckup: undefined;
   EditHealthInfo: undefined;
-  // 간편인증 관련 화면들
+
+  // 간편인증 관련 화면들 - 수정됨
   SimpleAuth: {
     userId: string;
     password: string;
+    userName?: string;      // 회원가입에서 전달
+    birthDate?: string;     // 회원가입에서 전달
+    phoneNumber?: string;   // 회원가입에서 전달
+    isFromRegister?: boolean; // 회원가입에서 왔는지 표시
   };
+
   SimpleAuthLoading: {
     authData: any;
     userName: string;
     birthDate: string;
     phoneNumber: string;
   };
+
   SimpleAuthSuccess: {
     authData: any;
     userName: string;
     birthDate: string;
     phoneNumber: string;
   };
+
   UserInfo: {
     authData: any;
     userName: string;
     birthDate: string;
     phoneNumber: string;
   };
+
   HealthCheckDate: {
     authData: any;
     userInfo: any;
     healthData: any;
   };
+
   DiseaseInfo: {
     authData: any;
     userInfo: any;

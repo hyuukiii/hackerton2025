@@ -8,8 +8,8 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,50 +21,61 @@ interface RegisterScreenProps {
 }
 
 const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
+  // 계정 정보
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [userIdMessage, setUserIdMessage] = useState('');
-  const [passwordMessage, setPasswordMessage] = useState('');
-  const [loading, setLoading] = useState(false);
+
+  // 개인 정보 (실제 정보)
+  const [userName, setUserName] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+
+  // 유효성 검사 상태
   const [isUserIdValid, setIsUserIdValid] = useState(false);
   const [isPasswordValid, setIsPasswordValid] = useState(false);
+  const [userIdMessage, setUserIdMessage] = useState('');
+  const [passwordMessage, setPasswordMessage] = useState('');
 
-  // 아이디 중복 검사
-  const checkUserId = async () => {
-    if (!userId || userId.length < 4) {
+  const [loading, setLoading] = useState(false);
+
+  // 아이디 중복 확인
+  useEffect(() => {
+    if (userId.length < 4) {
       setUserIdMessage('아이디는 4자 이상이어야 합니다.');
       setIsUserIdValid(false);
       return;
     }
 
-    try {
-      // 백엔드 API 호출 (임시 처리)
-      // const response = await api.post('/auth/check-id', { userId });
-
-      // 임시로 'test'가 이미 존재하는 아이디라고 가정
-      if (userId.toLowerCase() === 'test') {
-        setUserIdMessage('다른 회원이 사용하고 있는 아이디입니다.');
-        setIsUserIdValid(false);
-      } else {
-        setUserIdMessage('사용하실 수 있는 아이디입니다.');
-        setIsUserIdValid(true);
-      }
-    } catch (error) {
-      setUserIdMessage('아이디 확인 중 오류가 발생했습니다.');
+    if (!/^[a-zA-Z0-9]+$/.test(userId)) {
+      setUserIdMessage('아이디는 영문자와 숫자만 사용할 수 있습니다.');
       setIsUserIdValid(false);
+      return;
     }
-  };
 
-  // 비밀번호 일치 확인
+    // 실제로는 서버에 중복 확인 요청
+    const checkDuplicate = async () => {
+      // 임시로 성공 처리
+      setUserIdMessage('사용 가능한 아이디입니다.');
+      setIsUserIdValid(true);
+    };
+
+    const timer = setTimeout(checkDuplicate, 500);
+    return () => clearTimeout(timer);
+  }, [userId]);
+
+  // 비밀번호 유효성 검사
   useEffect(() => {
     if (password && confirmPassword) {
-      if (password === confirmPassword) {
-        setPasswordMessage('사용하실 수 있는 비밀번호입니다.');
-        setIsPasswordValid(true);
-      } else {
-        setPasswordMessage('비밀번호가 동일하지 않습니다.');
+      if (password !== confirmPassword) {
+        setPasswordMessage('비밀번호가 일치하지 않습니다.');
         setIsPasswordValid(false);
+      } else if (password.length < 6) {
+        setPasswordMessage('비밀번호는 6자 이상이어야 합니다.');
+        setIsPasswordValid(false);
+      } else {
+        setPasswordMessage('비밀번호가 일치합니다.');
+        setIsPasswordValid(true);
       }
     } else {
       setPasswordMessage('');
@@ -72,22 +83,39 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     }
   }, [password, confirmPassword]);
 
-  // 아이디 입력 시 실시간 검사
-  useEffect(() => {
-    if (userId) {
-      const timer = setTimeout(() => {
-        checkUserId();
-      }, 500); // 0.5초 디바운싱
-      return () => clearTimeout(timer);
+  // 생년월일 포맷팅 (YY.MM.DD)
+  const formatBirthDate = (text: string) => {
+    const numbers = text.replace(/[^0-9]/g, '');
+    if (numbers.length <= 2) {
+      return numbers;
+    } else if (numbers.length <= 4) {
+      return `${numbers.slice(0, 2)}.${numbers.slice(2)}`;
     } else {
-      setUserIdMessage('');
-      setIsUserIdValid(false);
+      return `${numbers.slice(0, 2)}.${numbers.slice(2, 4)}.${numbers.slice(4, 6)}`;
     }
-  }, [userId]);
+  };
+
+  // 전화번호 포맷팅
+  const formatPhoneNumber = (text: string) => {
+    const numbers = text.replace(/[^0-9]/g, '');
+    if (numbers.length <= 3) {
+      return numbers;
+    } else if (numbers.length <= 7) {
+      return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+    } else {
+      return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
+    }
+  };
 
   const handleRegister = async () => {
+    // 모든 필드 검증
+    if (!userId || !password || !confirmPassword || !userName || !birthDate || !phoneNumber) {
+      Alert.alert('오류', '모든 정보를 입력해주세요.');
+      return;
+    }
+
     if (!isUserIdValid) {
-      Alert.alert('오류', '사용 가능한 아이디를 입력해주세요.');
+      Alert.alert('오류', '아이디를 확인해주세요.');
       return;
     }
 
@@ -96,12 +124,39 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
       return;
     }
 
+    const birthNumbers = birthDate.replace(/[^0-9]/g, '');
+    if (birthNumbers.length !== 6) {
+      Alert.alert('오류', '생년월일을 올바르게 입력해주세요. (예: 98.10.14)');
+      return;
+    }
+
+    const phoneNumbers = phoneNumber.replace(/[^0-9]/g, '');
+    if (phoneNumbers.length !== 11) {
+      Alert.alert('오류', '휴대폰 번호를 올바르게 입력해주세요.');
+      return;
+    }
+
     setLoading(true);
     try {
-      // 간편인증 화면으로 이동
+      // 사용자 정보 저장
+      const userInfo = {
+        userId,
+        password,
+        userName,
+        birthDate: birthNumbers,
+        phoneNumber: phoneNumbers,
+      };
+
+      await AsyncStorage.setItem('tempUserInfo', JSON.stringify(userInfo));
+
+      // 간편인증 화면으로 이동 (자동으로 정보 전달)
       navigation.navigate('SimpleAuth', {
         userId,
         password,
+        userName,
+        birthDate: birthNumbers,
+        phoneNumber: phoneNumbers,
+        isFromRegister: true, // 회원가입에서 왔음을 표시
       });
     } catch (error) {
       Alert.alert('오류', '다시 시도해주세요.');
@@ -129,7 +184,13 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
           </TouchableOpacity>
 
           <View style={styles.content}>
-            <Text style={styles.title}>사용하실 정보를{'\n'}입력해주세요.</Text>
+            <Text style={styles.title}>회원가입</Text>
+            <Text style={styles.subtitle}>
+              간편인증을 위해 실제 정보를 입력해주세요
+            </Text>
+
+            {/* 계정 정보 섹션 */}
+            <Text style={styles.sectionTitle}>계정 정보</Text>
 
             {/* 아이디 입력 */}
             <View style={styles.inputWrapper}>
@@ -183,17 +244,68 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
               ) : null}
             </View>
 
+            {/* 개인 정보 섹션 */}
+            <Text style={[styles.sectionTitle, { marginTop: 30 }]}>
+              개인 정보 (간편인증용)
+            </Text>
+
+            {/* 이름 입력 */}
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
+                placeholder="이름 (실명)"
+                placeholderTextColor="#999"
+                value={userName}
+                onChangeText={setUserName}
+              />
+            </View>
+
+            {/* 생년월일 입력 */}
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
+                placeholder="생년월일 (예: 98.10.14)"
+                placeholderTextColor="#999"
+                value={birthDate}
+                onChangeText={(text) => setBirthDate(formatBirthDate(text))}
+                keyboardType="numeric"
+                maxLength={8}
+              />
+            </View>
+
+            {/* 전화번호 입력 */}
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
+                placeholder="휴대폰 번호"
+                placeholderTextColor="#999"
+                value={phoneNumber}
+                onChangeText={(text) => setPhoneNumber(formatPhoneNumber(text))}
+                keyboardType="phone-pad"
+                maxLength={13}
+              />
+            </View>
+
+            {/* 안내 메시지 */}
+            <View style={styles.infoBox}>
+              <Ionicons name="information-circle" size={20} color="#667eea" />
+              <Text style={styles.infoText}>
+                간편인증을 위해 실제 정보가 필요합니다.{'\n'}
+                입력하신 정보는 안전하게 보호됩니다.
+              </Text>
+            </View>
+
             {/* 확인 버튼 */}
             <TouchableOpacity
               style={[
                 styles.button,
-                (!isUserIdValid || !isPasswordValid || loading) && styles.buttonDisabled
+                (!isUserIdValid || !isPasswordValid || !userName || !birthDate || !phoneNumber || loading) && styles.buttonDisabled
               ]}
               onPress={handleRegister}
-              disabled={!isUserIdValid || !isPasswordValid || loading}
+              disabled={!isUserIdValid || !isPasswordValid || !userName || !birthDate || !phoneNumber || loading}
             >
               <Text style={styles.buttonText}>
-                {loading ? '처리 중...' : '확인'}
+                {loading ? '처리 중...' : '다음'}
               </Text>
             </TouchableOpacity>
 
@@ -202,7 +314,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
               style={styles.loginLink}
               onPress={() => navigation.navigate('Login')}
             >
-              <Text style={styles.loginLinkText}>이전으로</Text>
+              <Text style={styles.loginLinkText}>이미 계정이 있으신가요?</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -221,6 +333,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    paddingBottom: 50,
   },
   backButton: {
     position: 'absolute',
@@ -232,14 +345,24 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 30,
-    paddingTop: 120,
+    paddingTop: 100,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#333',
-    lineHeight: 40,
-    marginBottom: 50,
+    marginBottom: 10,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 30,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 15,
   },
   inputWrapper: {
     marginBottom: 20,
@@ -270,12 +393,28 @@ const styles = StyleSheet.create({
   validMessage: {
     color: '#007AFF',
   },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f4ff',
+    padding: 15,
+    borderRadius: 10,
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  infoText: {
+    flex: 1,
+    marginLeft: 10,
+    fontSize: 14,
+    color: '#667eea',
+    lineHeight: 20,
+  },
   button: {
     backgroundColor: '#667eea',
     paddingVertical: 18,
     borderRadius: 12,
     alignItems: 'center',
-    marginTop: 30,
+    marginTop: 20,
     elevation: 3,
     shadowColor: '#667eea',
     shadowOffset: {

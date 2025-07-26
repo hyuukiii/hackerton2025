@@ -1,5 +1,5 @@
 // src/screens/auth/SimpleAuthScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,18 +17,26 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../services/api';
 
+// 인터페이스 수정됨!
 interface SimpleAuthScreenProps {
   navigation: any;
   route: {
     params: {
       userId: string;
       password: string;
+      userName?: string;      // 선택적 - 회원가입에서 전달
+      birthDate?: string;     // 선택적 - 회원가입에서 전달
+      phoneNumber?: string;   // 선택적 - 회원가입에서 전달
+      isFromRegister?: boolean; // 선택적 - 회원가입 여부
     };
   };
 }
 
 const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }) => {
-  const { userId, password } = route.params;
+  // route params에서 회원가입 정보 받기
+  const { userId, password, userName: registerUserName, birthDate: registerBirthDate,
+          phoneNumber: registerPhoneNumber, isFromRegister } = route.params;
+
   const [authMethod, setAuthMethod] = useState<string>('');
   const [modalVisible, setModalVisible] = useState(false);
   const [userName, setUserName] = useState('');
@@ -42,9 +50,24 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
     { id: 'pass', name: '디지털원패스', icon: '🏛️', color: '#1E3A8A', textColor: '#FFF' },
   ];
 
+  // 회원가입에서 왔을 때 자동으로 정보 설정
+  useEffect(() => {
+    if (isFromRegister) {
+      setUserName(registerUserName || '');
+      setBirthDate(formatBirthDate(registerBirthDate || ''));
+      setPhoneNumber(formatPhoneNumber(registerPhoneNumber || ''));
+    }
+  }, [isFromRegister, registerUserName, registerBirthDate, registerPhoneNumber]);
+
   const handleAuthSelect = (method: string) => {
     setAuthMethod(method);
-    setModalVisible(true);
+
+    // 회원가입에서 왔으면 모달 없이 바로 인증 진행
+    if (isFromRegister && userName && birthDate && phoneNumber) {
+      handleSimpleAuth();
+    } else {
+      setModalVisible(true);
+    }
   };
 
   const formatBirthDate = (text: string) => {
@@ -69,8 +92,6 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
     }
   };
 
-  // SimpleAuthScreen.tsx의 handleSimpleAuth 함수 수정
-
   const handleSimpleAuth = async () => {
     if (!userName || !birthDate || !phoneNumber) {
       Alert.alert('알림', '모든 정보를 입력해주세요.');
@@ -86,13 +107,13 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
     // 6자리 생년월일을 8자리로 변환 (YYMMDD -> YYYYMMDD)
     const convertToFullYear = (yymmdd: string) => {
       const yy = parseInt(yymmdd.substring(0, 2));
-      const century = yy > 50 ? 1900 : 2000; // 50년 기준으로 1900년대 / 2000년대 구분
+      const century = yy > 50 ? 1900 : 2000;
       const fullYear = century + yy;
-      return fullYear + yymmdd.substring(2); // YYYYMMDD
+      return fullYear + yymmdd.substring(2);
     };
 
     const fullBirthDate = convertToFullYear(birthNumbers);
-    console.log('변환된 생년월일:', fullBirthDate); // 디버깅용
+    console.log('변환된 생년월일:', fullBirthDate);
 
     const phoneNumbers = phoneNumber.replace(/[^0-9]/g, '');
     if (phoneNumbers.length !== 11) {
@@ -104,7 +125,7 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
     setModalVisible(false);
 
     try {
-      // 1. 백엔드 간편인증 요청 API 호출
+      // 백엔드 간편인증 요청 API 호출
       console.log('간편인증 요청 시작');
       const authResponse = await api.post('/auth/request', {
         userName,
@@ -114,32 +135,28 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
 
       console.log('간편인증 응답:', authResponse);
 
-      // 2. 응답 확인 및 처리
       if (!authResponse) {
         throw new Error('간편인증 요청 실패');
       }
 
       console.log('간편인증 성공:', authResponse);
 
-      // 3. 인증 정보 저장
+      // 인증 정보 저장
       await AsyncStorage.setItem('authData', JSON.stringify(authResponse));
       await AsyncStorage.setItem('registerData', JSON.stringify({
         userId,
         password,
         authMethod,
         userName,
-        birthDate: birthNumbers, // 원본 6자리 저장 (UI 표시용)
+        birthDate: birthNumbers,
         phoneNumber: phoneNumbers,
       }));
 
-      // 4. Tilko API는 바로 인증 완료 후 다음 단계로 진행
-      console.log('간편인증 완료, 건강정보 조회 화면으로 이동');
-
-      // 인증 완료 후 건강정보 조회를 위한 통합 API 호출
+      // 인증 완료 후 건강정보 조회 화면으로 이동
       navigation.navigate('SimpleAuthLoading', {
         authData: authResponse,
         userName,
-        birthDate: birthNumbers, // UI용 6자리
+        birthDate: birthNumbers,
         phoneNumber: phoneNumbers,
       });
 
@@ -176,15 +193,16 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
           사용자의 건강정보를{'\n'}받아올게요!
         </Text>
 
-        <Text style={styles.subtitle}>간편인증하기</Text>
+        <Text style={styles.subtitle}>
+          아래 인증 중 편하신 걸 선택해 주세요
+        </Text>
 
-        <View style={styles.authGrid}>
+        <View style={styles.authButtons}>
           {authMethods.map((method) => (
             <TouchableOpacity
               key={method.id}
               style={[styles.authButton, { backgroundColor: method.color }]}
               onPress={() => handleAuthSelect(method.id)}
-              disabled={loading}
             >
               <Text style={[styles.authIcon, { color: method.textColor }]}>
                 {method.icon}
@@ -195,13 +213,9 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
             </TouchableOpacity>
           ))}
         </View>
-
-        <Text style={styles.notice}>
-          ※ 건강보험공단 간편인증을 통해 건강정보를 조회합니다
-        </Text>
       </View>
 
-      {/* 간편인증 정보 입력 모달 */}
+      {/* 모달 수정 - 회원가입에서 왔을 때 정보 표시 */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -214,17 +228,19 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
         >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>간편인증 정보 입력</Text>
+              <Text style={styles.modalTitle}>
+                {isFromRegister ? '간편인증 정보 확인' : '간편인증 정보 입력'}
+              </Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <Ionicons name="close" size={24} color="#333" />
               </TouchableOpacity>
             </View>
 
             <Text style={styles.modalSubtitle}>
-              {authMethod === 'kakao' && '카카오'}
-              {authMethod === 'naver' && '네이버'}
-              {authMethod === 'pass' && '디지털원패스'}
-              {' '}인증을 위해 아래 정보를 입력해주세요
+              {isFromRegister
+                ? '회원가입 시 입력하신 정보로 인증을 진행합니다.\n정보가 올바른지 확인해주세요.'
+                : `${authMethod === 'kakao' && '카카오'}${authMethod === 'naver' && '네이버'}${authMethod === 'pass' && '디지털원패스'} 인증을 위해 아래 정보를 입력해주세요`
+              }
             </Text>
 
             <View style={styles.inputGroup}>
@@ -235,6 +251,7 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
                 onChangeText={setUserName}
                 placeholder="홍길동"
                 placeholderTextColor="#9CA3AF"
+                editable={!isFromRegister} // 회원가입에서 왔으면 수정 불가
               />
             </View>
 
@@ -248,6 +265,7 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
                 placeholderTextColor="#9CA3AF"
                 keyboardType="numeric"
                 maxLength={8}
+                editable={!isFromRegister}
               />
             </View>
 
@@ -261,6 +279,7 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
                 placeholderTextColor="#9CA3AF"
                 keyboardType="phone-pad"
                 maxLength={13}
+                editable={!isFromRegister}
               />
             </View>
 
@@ -269,11 +288,10 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
               onPress={handleSimpleAuth}
               disabled={loading}
             >
-              {loading ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
+              {loading ?
+                <ActivityIndicator color="white" /> :
                 <Text style={styles.submitButtonText}>인증하기</Text>
-              )}
+              }
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -283,8 +301,8 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
       {loading && (
         <View style={styles.loadingOverlay}>
           <View style={styles.loadingContent}>
-            <ActivityIndicator size="large" color="#6366F1" />
-            <Text style={styles.loadingText}>간편인증 처리 중...</Text>
+            <ActivityIndicator size="large" color="#667eea" />
+            <Text style={styles.loadingText}>간편인증 진행 중...</Text>
           </View>
         </View>
       )}
@@ -295,75 +313,74 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#f5f5f5',
   },
   header: {
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 10,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 40,
+    paddingHorizontal: 30,
+    paddingTop: 20,
   },
   logo: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: '#6366F1',
+    color: '#667eea',
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: 60,
   },
   plus: {
-    color: '#9CA3AF',
+    color: '#999',
   },
   title: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#1F2937',
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#333',
     textAlign: 'center',
-    marginBottom: 40,
-    lineHeight: 34,
+    lineHeight: 40,
+    marginBottom: 20,
   },
   subtitle: {
-    fontSize: 18,
-    color: '#6B7280',
+    fontSize: 16,
+    color: '#666',
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: 50,
   },
-  authGrid: {
-    gap: 16,
+  authButtons: {
+    gap: 15,
   },
   authButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    padding: 20,
+    borderRadius: 15,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
   authIcon: {
     fontSize: 24,
+    marginRight: 15,
     fontWeight: 'bold',
-    marginRight: 12,
   },
   authText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
-  },
-  notice: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    textAlign: 'center',
-    marginTop: 20,
   },
   modalContainer: {
     flex: 1,
-    justifyContent: 'flex-end',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    backgroundColor: 'white',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     padding: 24,
     paddingBottom: Platform.OS === 'ios' ? 40 : 24,
   },
