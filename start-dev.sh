@@ -2,6 +2,11 @@
 
 echo "🚀 Healthcare Hackathon 개발 환경 시작"
 
+# 기존 프로세스 정리
+echo "🧹 기존 프로세스 정리 중..."
+pkill -f "spring-boot" 2>/dev/null || true
+sleep 2
+
 # MySQL 컨테이너 시작
 echo "📦 MySQL 컨테이너 시작..."
 docker-compose up -d
@@ -72,8 +77,8 @@ echo ""
 echo "✅ 모든 서비스가 시작되었습니다!"
 echo ""
 echo "📝 접속 URL:"
-echo "   - API 문서: http://localhost:8080/api/swagger-ui.html"
-echo "   - 헬스체크: http://localhost:8080/api/health"
+echo "   - API 문서: http://localhost:8082/api/swagger-ui.html"
+echo "   - 헬스체크: http://localhost:8082/api/health"
 echo "   - MySQL: localhost:3306 (root/root)"
 
 if [ -d "doctor-web" ] && [ -f "doctor-web/package.json" ]; then

@@ -60,7 +60,7 @@ mybatis:
 
 # 서버 설정
 server:
-  port: 8081  # 포트 변경 (8080 -> 8081)
+  port: 8082
   servlet:
     context-path: /api
   error:
