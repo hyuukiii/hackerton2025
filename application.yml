@@ -1,0 +1,111 @@
+spring:
+  application:
+    name: healthcare-hackathon
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/healthcare_db?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+    # HikariCP 설정
+    hikari:
+      connection-timeout: 30000
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: create  # 해커톤용 (처음엔 create, 이후 update)
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: true
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        default_batch_fetch_size: 100
+    open-in-view: false  # 성능 최적화
+
+  # Jackson 설정
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    serialization:
+      write-dates-as-timestamps: false
+    time-zone: Asia/Seoul
+
+  # 파일 업로드 설정
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+# MyBatis 설정
+mybatis:
+  mapper-locations: classpath:mapper/**/*.xml
+  type-aliases-package: com.hackathon.domain
+  configuration:
+    map-underscore-to-camel-case: true
+    default-fetch-size: 100
+    default-statement-timeout: 30
+    cache-enabled: false  # 해커톤에서는 캐시 끄기
+
+# 서버 설정
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+  error:
+    include-message: always
+    include-binding-errors: always
+
+# JWT 설정
+jwt:
+  secret: hackathon2025secretkeyhackathon2025secretkey  # 실제로는 환경변수로
+  expiration: 86400000  # 24시간
+
+# CORS 설정
+cors:
+  allowed-origins:
+    - http://localhost:3000    # Next.js
+    - http://localhost:19006   # Expo web
+    - http://localhost:8081    # Expo
+  allowed-methods:
+    - GET
+    - POST
+    - PUT
+    - DELETE
+    - OPTIONS
+  allowed-headers:
+    - Authorization
+    - Content-Type
+  exposed-headers:
+    - Authorization
+
+# 로깅 설정
+logging:
+  level:
+    com.hackathon: DEBUG
+    com.hackathon.mapper: DEBUG  # MyBatis 쿼리 로깅
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.web: DEBUG
+    org.springframework.security: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Actuator 설정 (모니터링)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# FCM 설정 (푸시 알림)
+fcm:
+  config-path: classpath:firebase-service-account.json  # Firebase 서비스 계정 키 파일
