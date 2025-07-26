@@ -1,17 +1,19 @@
 // src/screens/onboarding/OnboardingScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  ScrollView,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 
-const { width } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface OnboardingScreenProps {
   navigation: any;
@@ -22,7 +24,7 @@ const onboardingData = [
     id: 1,
     iconName: 'user-md',
     iconType: 'fontawesome5',
-    title: '의사에게\n내 병력을 전달하지\n않아도 됩니다.',
+    title: '의사에게\n내 병력을 올 전달하지\n않아도 됩니다.',
   },
   {
     id: 2,
@@ -40,16 +42,38 @@ const onboardingData = [
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
 
+  // 스크롤 이벤트 처리
+  const handleScroll = (event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / SCREEN_WIDTH);
+    if (index !== currentIndex && index >= 0 && index < onboardingData.length) {
+      setCurrentIndex(index);
+    }
+  };
+
+  // 화살표로 이동
   const handleNext = () => {
     if (currentIndex < onboardingData.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+      const nextIndex = currentIndex + 1;
+      scrollViewRef.current?.scrollTo({
+        x: nextIndex * SCREEN_WIDTH,
+        animated: true,
+      });
+      setCurrentIndex(nextIndex);
     }
   };
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
+      const prevIndex = currentIndex - 1;
+      scrollViewRef.current?.scrollTo({
+        x: prevIndex * SCREEN_WIDTH,
+        animated: true,
+      });
+      setCurrentIndex(prevIndex);
     }
   };
 
@@ -61,22 +85,16 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }) => {
     navigation.navigate('Register');
   };
 
-  const currentItem = onboardingData[currentIndex];
-
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerText}>최초 접속 화면</Text>
-      </View>
-
       <View style={styles.content}>
         <Text style={styles.logo}>Care Plus<Text style={styles.plus}>+</Text></Text>
 
-        <View style={styles.slideContainer}>
+        <View style={styles.slideWrapper}>
           {/* 좌측 화살표 */}
           <TouchableOpacity
             onPress={handlePrevious}
-            style={[styles.arrow, currentIndex === 0 && styles.arrowDisabled]}
+            style={[styles.arrow, styles.leftArrow, currentIndex === 0 && styles.arrowDisabled]}
             disabled={currentIndex === 0}
           >
             <Ionicons
@@ -86,22 +104,40 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }) => {
             />
           </TouchableOpacity>
 
-          {/* 중앙 카드 */}
-          <View style={styles.card}>
-            <View style={styles.iconContainer}>
-              <FontAwesome5
-                name={currentItem.iconName}
-                size={50}
-                color="#667eea"
-              />
-            </View>
-            <Text style={styles.cardText}>{currentItem.title}</Text>
-          </View>
+          {/* 스와이프 가능한 카드 영역 */}
+          <ScrollView
+            ref={scrollViewRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={Animated.event(
+              [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+              { useNativeDriver: false, listener: handleScroll }
+            )}
+            scrollEventThrottle={16}
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollViewContent}
+          >
+            {onboardingData.map((item, index) => (
+              <View key={item.id} style={styles.slideContainer}>
+                <View style={styles.card}>
+                  <View style={styles.iconContainer}>
+                    <FontAwesome5
+                      name={item.iconName}
+                      size={50}
+                      color="#667eea"
+                    />
+                  </View>
+                  <Text style={styles.cardText}>{item.title}</Text>
+                </View>
+              </View>
+            ))}
+          </ScrollView>
 
           {/* 우측 화살표 */}
           <TouchableOpacity
             onPress={handleNext}
-            style={[styles.arrow, currentIndex === onboardingData.length - 1 && styles.arrowDisabled]}
+            style={[styles.arrow, styles.rightArrow, currentIndex === onboardingData.length - 1 && styles.arrowDisabled]}
             disabled={currentIndex === onboardingData.length - 1}
           >
             <Ionicons
@@ -115,11 +151,32 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }) => {
         {/* 페이지 인디케이터 */}
         <View style={styles.indicatorContainer}>
           {onboardingData.map((_, index) => (
-            <View
+            <Animated.View
               key={index}
               style={[
                 styles.indicator,
-                index === currentIndex && styles.indicatorActive,
+                {
+                  opacity: scrollX.interpolate({
+                    inputRange: [
+                      (index - 1) * SCREEN_WIDTH,
+                      index * SCREEN_WIDTH,
+                      (index + 1) * SCREEN_WIDTH,
+                    ],
+                    outputRange: [0.3, 1, 0.3],
+                    extrapolate: 'clamp',
+                  }),
+                  transform: [{
+                    scaleX: scrollX.interpolate({
+                      inputRange: [
+                        (index - 1) * SCREEN_WIDTH,
+                        index * SCREEN_WIDTH,
+                        (index + 1) * SCREEN_WIDTH,
+                      ],
+                      outputRange: [1, 3, 1],
+                      extrapolate: 'clamp',
+                    }),
+                  }],
+                },
               ]}
             />
           ))}
@@ -144,39 +201,48 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  header: {
-    paddingVertical: 15,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  headerText: {
-    fontSize: 16,
-    color: '#666',
-  },
   content: {
     flex: 1,
     alignItems: 'center',
-    paddingTop: 40,
+    paddingTop: 80,
   },
   logo: {
     fontSize: 48,
     fontWeight: 'bold',
     color: '#667eea',
-    marginBottom: 50,
+    marginBottom: 60,
   },
   plus: {
     color: '#999',
   },
+  slideWrapper: {
+    height: 380,
+    position: 'relative',
+  },
+  scrollView: {
+    width: SCREEN_WIDTH,
+  },
+  scrollViewContent: {
+    alignItems: 'center',
+  },
   slideContainer: {
-    flexDirection: 'row',
+    width: SCREEN_WIDTH,
     alignItems: 'center',
     justifyContent: 'center',
-    width: width,
-    paddingHorizontal: 20,
+    paddingHorizontal: 40,
   },
   arrow: {
+    position: 'absolute',
+    top: '50%',
+    marginTop: -20,
     padding: 10,
+    zIndex: 10,
+  },
+  leftArrow: {
+    left: 10,
+  },
+  rightArrow: {
+    right: 10,
   },
   arrowDisabled: {
     opacity: 0.3,
@@ -186,10 +252,17 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 40,
     alignItems: 'center',
-    marginHorizontal: 20,
-    width: width * 0.6,
+    width: SCREEN_WIDTH * 0.8,
     minHeight: 300,
     justifyContent: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
   },
   iconContainer: {
     width: 100,
@@ -199,6 +272,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 30,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   cardText: {
     fontSize: 20,
@@ -209,19 +290,15 @@ const styles = StyleSheet.create({
   },
   indicatorContainer: {
     flexDirection: 'row',
-    marginTop: 30,
-    marginBottom: 40,
+    marginTop: 40,
+    marginBottom: 50,
   },
   indicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#ddd',
-    marginHorizontal: 4,
-  },
-  indicatorActive: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: '#667eea',
-    width: 24,
+    marginHorizontal: 8,
   },
   loginButton: {
     backgroundColor: 'white',
