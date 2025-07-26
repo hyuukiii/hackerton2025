@@ -107,5 +107,5 @@ management:
       show-details: always
 
 # FCM 설정 (푸시 알림)
-fcm:
-  config-path: classpath:firebase-service-account.json  # Firebase 서비스 계정 키 파일
+#fcm:
+  #config-path: classpath:firebase-service-account.json  # Firebase 서비스 계정 키 파일
