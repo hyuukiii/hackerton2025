@@ -7,6 +7,14 @@ import LoginSuccessScreen from '../screens/auth/LoginSuccessScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import HomeScreen from '../screens/home/HomeScreen';
 
+// 간편인증 관련 화면들
+import SimpleAuthScreen from '../screens/auth/SimpleAuthScreen';
+import SimpleAuthLoadingScreen from '../screens/auth/SimpleAuthLoadingScreen';
+import SimpleAuthSuccessScreen from '../screens/auth/SimpleAuthSuccessScreen';
+import UserInfoScreen from '../screens/auth/UserInfoScreen';
+import HealthCheckDateScreen from '../screens/auth/HealthCheckDateScreen';
+import DiseaseInfoScreen from '../screens/auth/DiseaseInfoScreen';
+
 // 임시 화면들
 import { View, Text, StyleSheet } from 'react-native';
 
@@ -46,7 +54,56 @@ const EditHealthInfoScreen = () => (
   </View>
 );
 
-const Stack = createStackNavigator();
+export type RootStackParamList = {
+  Onboarding: undefined;
+  Login: undefined;
+  LoginSuccess: undefined;
+  Register: undefined;
+  FindId: undefined;
+  FindPassword: undefined;
+  Main: undefined;
+  PrescriptionHistory: undefined;
+  MedicalHistory: undefined;
+  HealthCheckup: undefined;
+  EditHealthInfo: undefined;
+  // 간편인증 관련 화면들
+  SimpleAuth: {
+    userId: string;
+    password: string;
+  };
+  SimpleAuthLoading: {
+    authData: any;
+    userName: string;
+    birthDate: string;
+    phoneNumber: string;
+  };
+  SimpleAuthSuccess: {
+    authData: any;
+    userName: string;
+    birthDate: string;
+    phoneNumber: string;
+  };
+  UserInfo: {
+    authData: any;
+    userName: string;
+    birthDate: string;
+    phoneNumber: string;
+  };
+  HealthCheckDate: {
+    authData: any;
+    userInfo: any;
+    healthData: any;
+  };
+  DiseaseInfo: {
+    authData: any;
+    userInfo: any;
+    healthData: any;
+    selectedCheckupDate: any;
+    diseaseAnalysis: any;
+  };
+};
+
+const Stack = createStackNavigator<RootStackParamList>();
 
 const AppNavigator = () => {
   return (
@@ -58,7 +115,11 @@ const AppNavigator = () => {
     >
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="LoginSuccess" component={LoginSuccessScreen} />
+      <Stack.Screen
+        name="LoginSuccess"
+        component={LoginSuccessScreen}
+        options={{ animation: 'fade' }}
+      />
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="FindId" component={FindIdScreen} />
       <Stack.Screen name="FindPassword" component={FindPasswordScreen} />
@@ -67,6 +128,22 @@ const AppNavigator = () => {
       <Stack.Screen name="MedicalHistory" component={MedicalHistoryScreen} />
       <Stack.Screen name="HealthCheckup" component={HealthCheckupScreen} />
       <Stack.Screen name="EditHealthInfo" component={EditHealthInfoScreen} />
+
+      {/* 간편인증 관련 화면들 추가 */}
+      <Stack.Screen name="SimpleAuth" component={SimpleAuthScreen} />
+      <Stack.Screen
+        name="SimpleAuthLoading"
+        component={SimpleAuthLoadingScreen}
+        options={{ animation: 'fade' }}
+      />
+      <Stack.Screen
+        name="SimpleAuthSuccess"
+        component={SimpleAuthSuccessScreen}
+        options={{ animation: 'fade' }}
+      />
+      <Stack.Screen name="UserInfo" component={UserInfoScreen} />
+      <Stack.Screen name="HealthCheckDate" component={HealthCheckDateScreen} />
+      <Stack.Screen name="DiseaseInfo" component={DiseaseInfoScreen} />
     </Stack.Navigator>
   );
 };

@@ -98,20 +98,13 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
 
     setLoading(true);
     try {
-      // 백엔드 API 호출
-      // const response = await api.post('/auth/register', {
-      //   userId,
-      //   password,
-      // });
-
-      // 임시 처리
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      Alert.alert('회원가입 완료', '로그인 화면으로 이동합니다.', [
-        { text: '확인', onPress: () => navigation.navigate('Login') }
-      ]);
+      // 간편인증 화면으로 이동
+      navigation.navigate('SimpleAuth', {
+        userId,
+        password,
+      });
     } catch (error) {
-      Alert.alert('회원가입 실패', '다시 시도해주세요.');
+      Alert.alert('오류', '다시 시도해주세요.');
     } finally {
       setLoading(false);
     }
