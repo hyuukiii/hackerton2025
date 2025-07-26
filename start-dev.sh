@@ -60,17 +60,18 @@ sleep 15
 # Next.js 의사용 웹 시작 (있는 경우)
 if [ -d "doctor-web" ] && [ -f "doctor-web/package.json" ]; then
     echo "🌐 Next.js 의사용 웹 시작..."
-    cd doctor-web && npm run dev &
+    (cd doctor-web && npm run dev) &
     FRONTEND_WEB_PID=$!
-    cd ..
+    sleep 3
 fi
 
 # Expo 환자용 앱 시작 (있는 경우)
 if [ -d "patient-app" ] && [ -f "patient-app/package.json" ]; then
     echo "📱 Expo 환자용 앱 시작..."
-    cd patient-app && npm start &
+    echo "📱 patient-app 디렉토리로 이동 중..."
+    (cd patient-app && npm start) &
     FRONTEND_APP_PID=$!
-    cd ..
+    sleep 5
 fi
 
 echo ""
@@ -86,10 +87,15 @@ if [ -d "doctor-web" ] && [ -f "doctor-web/package.json" ]; then
 fi
 
 if [ -d "patient-app" ] && [ -f "patient-app/package.json" ]; then
-    echo "   - 환자용 앱: http://localhost:19006 (Expo Web)"
+    echo "   - 환자용 앱: http://localhost:19000"
+    echo "   - Expo 웹: http://localhost:19006"
     echo "   - Expo 모바일: Expo Go 앱에서 QR 코드 스캔"
 fi
 
+echo ""
+echo "💡 팁: 각 서비스의 로그를 보려면 새 터미널에서 다음 명령어를 사용하세요:"
+echo "   - Spring Boot 로그: tail -f backend/build/logs/spring.log"
+echo "   - 모든 프로세스 확인: ps aux | grep -E 'node|java'"
 echo ""
 echo "종료하려면 Ctrl+C를 누르세요."
 
