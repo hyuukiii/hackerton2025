@@ -1,4 +1,4 @@
-package com.hackerton.team2.dto;
+package com.hackathon.dto;
 
 public class MedicationRequestDto {
     private String cxId;

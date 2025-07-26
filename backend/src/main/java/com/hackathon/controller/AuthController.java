@@ -1,8 +1,8 @@
-package com.hackerton.team2.controller;
+package com.hackathon.controller;
 
-import com.hackerton.team2.dto.AuthRequestDto;
-import com.hackerton.team2.dto.AuthResponseDto;
-import com.hackerton.team2.service.AuthService;
+import com.hackathon.dto.AuthRequestDto;
+import com.hackathon.dto.AuthResponseDto;
+import com.hackathon.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

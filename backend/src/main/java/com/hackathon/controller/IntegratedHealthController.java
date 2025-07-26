@@ -1,9 +1,9 @@
-package com.hackerton.team2.controller;
+package com.hackathon.controller;
 
-import com.hackerton.team2.dto.AuthResponseDto;
-import com.hackerton.team2.dto.IntegratedHealthDataDto;
-import com.hackerton.team2.dto.DiseaseAnalysisDto;
-import com.hackerton.team2.service.IntegratedHealthService;
+import com.hackathon.dto.AuthResponseDto;
+import com.hackathon.dto.IntegratedHealthDataDto;
+import com.hackathon.dto.DiseaseAnalysisDto;
+import com.hackathon.service.IntegratedHealthService;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;

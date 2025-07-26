@@ -119,6 +119,12 @@ management:
   security:
     enabled: false  # Actuator 보안 비활성화
 
+# Tilko API 설정 추가
+tilko:
+  api:
+    host: https://dev.tilko.net
+    key: 49a84c1bcba847f4922da4208540ee65
+
 # gpt api 설정
 chatgpt:
   api:

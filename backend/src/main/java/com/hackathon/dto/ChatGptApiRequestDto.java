@@ -1,4 +1,4 @@
-package com.hackerton.team2.dto;
+package com.hackathon.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;

@@ -1,9 +1,9 @@
-package com.hackerton.team2.service;
+package com.hackathon.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hackerton.team2.dto.ChatGptApiRequestDto;
-import com.hackerton.team2.dto.ChatGptApiResponseDto;
-import com.hackerton.team2.dto.DiseaseAnalysisDto;
+import com.hackathon.dto.ChatGptApiRequestDto;
+import com.hackathon.dto.ChatGptApiResponseDto;
+import com.hackathon.dto.DiseaseAnalysisDto;
 import okhttp3.*;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
