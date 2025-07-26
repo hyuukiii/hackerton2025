@@ -37,8 +37,6 @@ dependencies {
     // MySQL Driver
     runtimeOnly 'com.mysql:mysql-connector-j'
 
-    // Connection Pool (HikariCP는 Spring Boot에 기본 포함)
-
     // JWT for Authentication
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
@@ -53,14 +51,23 @@ dependencies {
     // JSON Processing
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-hibernate5-jakarta'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.15.2'
 
     // Apache Commons (유틸리티)
     implementation 'org.apache.commons:commons-lang3:3.14.0'
     implementation 'commons-io:commons-io:2.15.1'
 
+    // OkHttp3 (외부 API 호출용)
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+
+    // JSON Simple (간편인증 API용)
+    implementation 'com.googlecode.json-simple:json-simple:1.1.1'
+
     // Lombok
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
+    compileOnly 'org.projectlombok:lombok:1.18.32'
+    annotationProcessor 'org.projectlombok:lombok:1.18.32'
 
     // Development Tools
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
@@ -77,10 +84,12 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter-test:3.0.3'
     testRuntimeOnly 'com.h2database:h2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     // RestAssured for API Testing
     testImplementation 'io.rest-assured:rest-assured:5.3.2'
 }
+
 
 tasks.named('test') {
     useJUnitPlatform()
