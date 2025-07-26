@@ -1,58 +1,45 @@
 // src/screens/onboarding/OnboardingScreen.tsx
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
-  Dimensions,
   TouchableOpacity,
-  StatusBar,
+  Dimensions,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 interface OnboardingScreenProps {
   navigation: any;
 }
 
-interface SlideData {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  iconColor: string;
-}
-
-const slides: SlideData[] = [
+const onboardingData = [
   {
-    id: '1',
-    title: '전문 의료진과 연결',
-    description: '병원의 전문 의료진과 안전하게 소통하세요',
-    icon: 'user-md', // 의사 아이콘
-    iconColor: '#667eea',
+    id: 1,
+    iconName: 'user-md',
+    iconType: 'fontawesome5',
+    title: '의사에게\n내 병력을 전달하지\n않아도 됩니다.',
   },
   {
-    id: '2',
-    title: '처방 정보 관리',
-    description: '개인 처방 정보와 건강 데이터를 한 곳에서',
-    icon: 'prescription-bottle-alt',
-    iconColor: '#764ba2',
+    id: 2,
+    iconName: 'pills',
+    iconType: 'fontawesome5',
+    title: '신기능 기반\n맞춤형 처방 안전성을\n확인하세요.',
   },
   {
-    id: '3',
-    title: '신기능 기반 평가',
-    description: 'AI 기반 CDSS로 정확한 용량 평가 제공',
-    icon: 'heartbeat',
-    iconColor: '#f093fb',
+    id: 3,
+    iconName: 'mobile-alt',
+    iconType: 'fontawesome5',
+    title: '간편하게\n처방전 정보를\n관리하세요.',
   },
 ];
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const scrollViewRef = useRef<ScrollView>(null);
 
   const handleNext = () => {
     if (currentIndex < onboardingData.length - 1) {
@@ -102,7 +89,11 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }) => {
           {/* 중앙 카드 */}
           <View style={styles.card}>
             <View style={styles.iconContainer}>
-              <Text style={styles.icon}>{currentItem.icon}</Text>
+              <FontAwesome5
+                name={currentItem.iconName}
+                size={50}
+                color="#667eea"
+              />
             </View>
             <Text style={styles.cardText}>{currentItem.title}</Text>
           </View>
@@ -208,9 +199,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 30,
-  },
-  icon: {
-    fontSize: 60,
   },
   cardText: {
     fontSize: 20,
