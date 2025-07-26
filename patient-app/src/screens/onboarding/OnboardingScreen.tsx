@@ -1,42 +1,58 @@
 // src/screens/onboarding/OnboardingScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+  ScrollView,
   Dimensions,
-  Image,
+  TouchableOpacity,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 
-const { width } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface OnboardingScreenProps {
   navigation: any;
 }
 
-const onboardingData = [
+interface SlideData {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  iconColor: string;
+}
+
+const slides: SlideData[] = [
   {
-    id: 1,
-    icon: '👨‍⚕️',
-    title: '의사에게\n내 병력을 올 전달하지\n않아도 됩니다.',
+    id: '1',
+    title: '전문 의료진과 연결',
+    description: '병원의 전문 의료진과 안전하게 소통하세요',
+    icon: 'user-md', // 의사 아이콘
+    iconColor: '#667eea',
   },
   {
-    id: 2,
-    icon: '💊',
-    title: '신기능 기반\n맞춤형 처방 안전성을\n확인하세요.',
+    id: '2',
+    title: '처방 정보 관리',
+    description: '개인 처방 정보와 건강 데이터를 한 곳에서',
+    icon: 'prescription-bottle-alt',
+    iconColor: '#764ba2',
   },
   {
-    id: 3,
-    icon: '📱',
-    title: '간편하게\n처방전 정보를\n관리하세요.',
+    id: '3',
+    title: '신기능 기반 평가',
+    description: 'AI 기반 CDSS로 정확한 용량 평가 제공',
+    icon: 'heartbeat',
+    iconColor: '#f093fb',
   },
 ];
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const handleNext = () => {
     if (currentIndex < onboardingData.length - 1) {
