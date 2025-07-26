@@ -30,7 +30,16 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
     setLoading(true);
     try {
-      // API 호출 (백엔드 구현 후 수정)
+      // 임시 처리 (백엔드 없이 테스트)
+      if (__DEV__) {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // 로딩 시뮬레이션
+        await AsyncStorage.setItem('authToken', 'temp-token');
+        await AsyncStorage.setItem('userData', JSON.stringify({ phoneNumber }));
+        navigation.replace('Main');
+        return;
+      }
+
+      // 실제 API 호출 (백엔드 구현 후 사용)
       const response = await api.post('/auth/login', {
         phoneNumber: phoneNumber.replace(/-/g, ''),
       });

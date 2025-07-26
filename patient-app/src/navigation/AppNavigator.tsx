@@ -3,15 +3,10 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
+import RegisterScreen from '../screens/auth/RegisterScreen';
 
-// 임시 화면들
+// 임시 홈 화면
 import { View, Text, StyleSheet } from 'react-native';
-
-const RegisterScreen = () => (
-  <View style={styles.container}>
-    <Text style={styles.text}>회원가입 화면 - 구현 예정</Text>
-  </View>
-);
 
 const HomeScreen = () => (
   <View style={styles.container}>

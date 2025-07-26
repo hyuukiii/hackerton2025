@@ -5,8 +5,11 @@ import Constants from 'expo-constants';
 
 // 개발/프로덕션 환경에 따른 API URL 설정
 const API_URL = __DEV__
-? 'http://10.10.180.66:19000/api'  // 본인 PC IP로 변경!
+? 'http://localhost:8082/api'  // API 서버는 8082 포트에서 실행
 : 'https://api.careplus.com/api';
+
+// 백엔드 없이 테스트 모드
+const TEST_MODE = true; // 백엔드 준비되면 false로 변경
 
 const api = axios.create({
 baseURL: API_URL,
