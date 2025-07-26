@@ -179,9 +179,60 @@ public class AuthService {
         }
     }
 
+    // 간편인증 요청 처리 - 원본 JSON 반환 (Raw) - 이 메서드가 누락되어 있었습니다!
+    public Object requestSimpleAuthRaw(AuthRequestDto authRequest) throws Exception {
+        // RSA Public Key 조회
+        String rsaPublicKey = getPublicKey();
+
+        // AES Secret Key 및 IV 생성
+        byte[] aesKey = new byte[16];
+        new Random().nextBytes(aesKey);
+
+        byte[] aesIv = new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+        // AES Key를 RSA Public Key로 암호화
+        String aesCipherKey = rsaEncrypt(rsaPublicKey, aesKey);
+
+        // API URL 설정
+        String url = apiHost + "/api/v1.0/nhissimpleauth/simpleauthrequest";
+
+        // API 요청 파라미터 설정
+        JSONObject json = new JSONObject();
+        json.put("PrivateAuthType", "0");
+        json.put("UserName", aesEncrypt(aesKey, aesIv, authRequest.getUserName()));
+        json.put("BirthDate", aesEncrypt(aesKey, aesIv, authRequest.getBirthDate()));
+        json.put("UserCellphoneNumber", aesEncrypt(aesKey, aesIv, authRequest.getUserCellphoneNumber()));
+
+        // API 호출
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(60, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(60, TimeUnit.SECONDS)
+                .build();
+
+        Request request = new Request.Builder()
+                .url(url)
+                .addHeader("API-KEY", apiKey)
+                .addHeader("ENC-KEY", aesCipherKey)
+                .post(RequestBody.create(MediaType.get("application/json; charset=utf-8"), json.toJSONString()))
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            if (response.body() == null) {
+                throw new IOException("Response body is null");
+            }
+
+            String responseStr = response.body().string();
+
+            // JSON 파싱해서 원본 그대로 반환
+            JSONParser parser = new JSONParser();
+            return parser.parse(responseStr);
+        }
+    }
+
     // Public Key 조회
     private String getPublicKey() throws Exception {
-        String url = apiHost + "/api/publickey";
+        String url = apiHost + "/api/Auth/GetPublicKey?APIkey=" + apiKey;
 
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(30, TimeUnit.SECONDS)
@@ -222,6 +273,10 @@ public class AuthService {
 
     // AES 암호화
     private String aesEncrypt(byte[] key, byte[] iv, String plainText) throws Exception {
+        if (plainText == null || plainText.isEmpty()) {
+            return "";
+        }
+
         SecretKeySpec secretKey = new SecretKeySpec(key, "AES");
         IvParameterSpec ivSpec = new IvParameterSpec(iv);
 
