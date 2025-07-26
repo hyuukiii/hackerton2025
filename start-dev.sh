@@ -10,18 +10,41 @@ docker-compose up -d
 echo "⏳ MySQL 준비 대기 중..."
 sleep 10
 
+# MySQL 컨테이너 이름 동적으로 가져오기
+MYSQL_CONTAINER=$(docker ps --filter "name=mysql" --format "{{.Names}}" | head -1)
+
 # MySQL 연결 테스트
 echo "🔍 MySQL 연결 테스트..."
-docker exec $(docker ps -qf "name=mysql") mysql -uroot -proot -e "SELECT 1" > /dev/null 2>&1
-if [ $? -eq 0 ]; then
-    echo "✅ MySQL 연결 성공!"
+if [ -n "$MYSQL_CONTAINER" ]; then
+    docker exec $MYSQL_CONTAINER mysql -uroot -proot -e "SELECT 1" > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        echo "✅ MySQL 연결 성공!"
+    else
+        echo "⏳ MySQL이 아직 준비 중입니다. 잠시 더 기다립니다..."
+        sleep 10
+        docker exec $MYSQL_CONTAINER mysql -uroot -proot -e "SELECT 1" > /dev/null 2>&1
+        if [ $? -eq 0 ]; then
+            echo "✅ MySQL 연결 성공!"
+        else
+            echo "⚠️ MySQL 연결 실패. 계속 진행합니다."
+        fi
+    fi
 else
-    echo "❌ MySQL 연결 실패. Docker 상태를 확인하세요."
+    echo "❌ MySQL 컨테이너를 찾을 수 없습니다."
 fi
 
 # Spring Boot 애플리케이션 시작
 echo "🌱 Spring Boot 백엔드 시작..."
-cd backend && ./gradlew bootRun &
+cd backend
+
+# Gradle wrapper 확인
+if [ ! -f "gradlew" ]; then
+    echo "❌ Gradle wrapper가 없습니다. 다음 명령어를 실행하세요:"
+    echo "cd backend && gradle wrapper --gradle-version=8.5"
+    exit 1
+fi
+
+./gradlew bootRun &
 BACKEND_PID=$!
 cd ..
 
@@ -30,7 +53,7 @@ echo "⏳ 백엔드 시작 대기 중..."
 sleep 15
 
 # Next.js 의사용 웹 시작 (있는 경우)
-if [ -d "doctor-web" ]; then
+if [ -d "doctor-web" ] && [ -f "doctor-web/package.json" ]; then
     echo "🌐 Next.js 의사용 웹 시작..."
     cd doctor-web && npm run dev &
     FRONTEND_WEB_PID=$!
@@ -38,7 +61,7 @@ if [ -d "doctor-web" ]; then
 fi
 
 # Expo 환자용 앱 시작 (있는 경우)
-if [ -d "patient-app" ]; then
+if [ -d "patient-app" ] && [ -f "patient-app/package.json" ]; then
     echo "📱 Expo 환자용 앱 시작..."
     cd patient-app && npm start &
     FRONTEND_APP_PID=$!
@@ -53,11 +76,11 @@ echo "   - API 문서: http://localhost:8080/api/swagger-ui.html"
 echo "   - 헬스체크: http://localhost:8080/api/health"
 echo "   - MySQL: localhost:3306 (root/root)"
 
-if [ -d "doctor-web" ]; then
+if [ -d "doctor-web" ] && [ -f "doctor-web/package.json" ]; then
     echo "   - 의사용 웹: http://localhost:3000"
 fi
 
-if [ -d "patient-app" ]; then
+if [ -d "patient-app" ] && [ -f "patient-app/package.json" ]; then
     echo "   - 환자용 앱: http://localhost:19006 (Expo Web)"
     echo "   - Expo 모바일: Expo Go 앱에서 QR 코드 스캔"
 fi
