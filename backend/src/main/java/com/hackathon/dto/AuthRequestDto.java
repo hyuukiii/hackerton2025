@@ -1,0 +1,14 @@
+package com.hackerton.team2.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class AuthRequestDto {
+    private String userName;
+    private String birthDate;
+    private String userCellphoneNumber;
+}
