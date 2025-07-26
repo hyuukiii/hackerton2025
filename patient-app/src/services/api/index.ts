@@ -5,7 +5,7 @@ import Constants from 'expo-constants';
 
 // 개발/프로덕션 환경에 따른 API URL 설정
 const API_URL = __DEV__
-? 'http://192.168.0.100:8082/api'  // 본인 PC IP로 변경!
+? 'http://10.10.180.66:19000/api'  // 본인 PC IP로 변경!
 : 'https://api.careplus.com/api';
 
 const api = axios.create({
