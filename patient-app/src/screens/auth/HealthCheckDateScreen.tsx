@@ -23,107 +23,66 @@ interface HealthCheckDateScreenProps {
   };
 }
 
-interface HealthCheckDate {
-  date: string;
-  hospital: string;
-  isSelected: boolean;
-}
-
 const HealthCheckDateScreen: React.FC<HealthCheckDateScreenProps> = ({ navigation, route }) => {
   const { authData, userInfo, healthData } = route.params;
-  const [checkDates, setCheckDates] = useState<HealthCheckDate[]>([]);
-  const [selectedDate, setSelectedDate] = useState<HealthCheckDate | null>(null);
+  const [latestCheckupDate, setLatestCheckupDate] = useState('');
+  const [hospitalName, setHospitalName] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // 건강검진 날짜 파싱 (실제 API 응답에 맞게 수정 필요)
-    const mockDates: HealthCheckDate[] = [
-      {
-        date: '2023.07.26',
-        hospital: '이시네요',
-        isSelected: false,
-      },
-      {
-        date: '2022.05.15',
-        hospital: '서울대학교병원',
-        isSelected: false,
-      },
-      {
-        date: '2021.03.10',
-        hospital: '삼성서울병원',
-        isSelected: false,
-      },
-    ];
-
-    // 실제로는 healthData에서 파싱
-    if (healthData && healthData.checkupHistory) {
-      // API 응답 구조에 맞게 파싱
-      const parsedDates = healthData.checkupHistory.map((item: any) => ({
-        date: item.checkupDate,
-        hospital: item.hospitalName,
-        isSelected: false,
-      }));
-      setCheckDates(parsedDates);
-    } else {
-      // 테스트용 더미 데이터
-      setCheckDates(mockDates);
-    }
+    console.log('HealthCheckDateScreen - healthData:', healthData);
+    parseLatestHealthCheckDate();
   }, [healthData]);
 
-  const handleDateSelect = (index: number) => {
-    const updatedDates = checkDates.map((date, i) => ({
-      ...date,
-      isSelected: i === index,
-    }));
-    setCheckDates(updatedDates);
-    setSelectedDate(updatedDates[index]);
+  const parseLatestHealthCheckDate = () => {
+    try {
+      // 실제 API 응답에서 최근 건강검진 날짜 파싱
+      if (healthData?.healthCheckupData?.ResultList && healthData.healthCheckupData.ResultList.length > 0) {
+        // 가장 최근 검진 (첫 번째 항목)
+        const latestCheckup = healthData.healthCheckupData.ResultList[0];
+        console.log('최근 건강검진:', latestCheckup);
+
+        // 날짜 포맷 변환 (01/18 -> 01.18)
+        const checkDate = latestCheckup.CheckUpDate ? latestCheckup.CheckUpDate.replace('/', '.') : '';
+        const year = latestCheckup.Year ? latestCheckup.Year.replace('년', '') : '';
+
+        setLatestCheckupDate(`${year}.${checkDate}`);
+        setHospitalName(latestCheckup.Location || '검진기관');
+      } else {
+        // 건강검진 데이터가 없는 경우
+        setLatestCheckupDate('검진 기록 없음');
+        setHospitalName('');
+      }
+    } catch (error) {
+      console.error('건강검진 날짜 파싱 오류:', error);
+      setLatestCheckupDate('정보 확인 불가');
+      setHospitalName('');
+    }
   };
 
   const handleNext = async () => {
-    if (!selectedDate) {
-      Alert.alert('알림', '건강검진 날짜를 선택해주세요.');
-      return;
-    }
-
     setLoading(true);
 
     try {
-      // 선택된 건강검진 날짜 저장
-      await AsyncStorage.setItem('selectedCheckupDate', JSON.stringify(selectedDate));
+      // 최근 건강검진 정보 저장
+      await AsyncStorage.setItem('latestCheckupInfo', JSON.stringify({
+        date: latestCheckupDate,
+        hospital: hospitalName,
+      }));
 
-      // 복약 정보 기반 AI 기저질환 분석 요청
-      const medicationData = healthData?.medicationData || [];
-      const diseaseAnalysis = await api.post('/integrated/analyze-diseases', medicationData);
+      // 회원가입 완료 처리
+      await AsyncStorage.setItem('authToken', 'temp-token');
+      await AsyncStorage.setItem('isLoggedIn', 'true');
 
-      await AsyncStorage.setItem('diseaseAnalysis', JSON.stringify(diseaseAnalysis));
-
-      // 기저질환 정보 화면으로 이동
-      navigation.navigate('DiseaseInfo', {
-        authData,
-        userInfo,
-        healthData,
-        selectedCheckupDate: selectedDate,
-        diseaseAnalysis,
+      // 메인 화면으로 이동
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
       });
 
     } catch (error) {
-      console.error('기저질환 분석 오류:', error);
-
-      // 오류 시에도 다음 화면으로 이동 (기저질환 없음으로 표시)
-      const emptyAnalysis = {
-        status: 'NO_DATA',
-        message: '분석할 수 있는 복약 정보가 없습니다.',
-        predictedDiseases: [],
-        riskLevel: 'LOW',
-      };
-
-      navigation.navigate('DiseaseInfo', {
-        authData,
-        userInfo,
-        healthData,
-        selectedCheckupDate: selectedDate,
-        diseaseAnalysis: emptyAnalysis,
-      });
+      console.error('다음 단계 진행 오류:', error);
+      Alert.alert('오류', '처리 중 문제가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -143,56 +102,30 @@ const HealthCheckDateScreen: React.FC<HealthCheckDateScreenProps> = ({ navigatio
       >
         <View style={styles.content}>
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>최근 검강검진을 받으신 날이</Text>
+            <Text style={styles.title}>최근 건강검진을 받으신 날이</Text>
             <View style={styles.dateHighlight}>
               <Text style={styles.highlightText}>
-                {checkDates.length > 0 ? checkDates[0].date : '2023.07.26'}
+                {latestCheckupDate || '2023.07.26'}
               </Text>
             </View>
-            <Text style={styles.title}>{checkDates.length > 0 ? checkDates[0].hospital : '이시네요'}</Text>
+            <Text style={styles.subtitle}>
+              {hospitalName || '이시네요'}
+            </Text>
           </View>
 
-          <View style={styles.dateList}>
-            {checkDates.map((date, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.dateItem,
-                  date.isSelected && styles.dateItemSelected,
-                ]}
-                onPress={() => handleDateSelect(index)}
-              >
-                <View style={styles.dateInfo}>
-                  <Text style={[
-                    styles.dateText,
-                    date.isSelected && styles.dateTextSelected,
-                  ]}>
-                    {date.date}
-                  </Text>
-                  <Text style={[
-                    styles.hospitalText,
-                    date.isSelected && styles.hospitalTextSelected,
-                  ]}>
-                    {date.hospital}
-                  </Text>
-                </View>
-                <View style={[
-                  styles.radioButton,
-                  date.isSelected && styles.radioButtonSelected,
-                ]}>
-                  {date.isSelected && <View style={styles.radioButtonInner} />}
-                </View>
-              </TouchableOpacity>
-            ))}
+          <View style={styles.infoBox}>
+            <Text style={styles.infoText}>
+              회원님의 건강정보가{'\n'}성공적으로 연동되었습니다.
+            </Text>
           </View>
 
           <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleNext}
-            disabled={loading || !selectedDate}
+            disabled={loading}
           >
             <Text style={styles.buttonText}>
-              {loading ? '분석중...' : '다음으로'}
+              {loading ? '처리중...' : '다음으로'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -223,23 +156,27 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 30,
+    paddingTop: 60,
     paddingBottom: 40,
+    flex: 1,
   },
   titleContainer: {
-    marginBottom: 40,
+    alignItems: 'center',
+    marginBottom: 50,
   },
   title: {
     fontSize: 20,
     color: '#333',
     fontWeight: '600',
     lineHeight: 28,
+    marginBottom: 20,
   },
   dateHighlight: {
     backgroundColor: 'white',
-    borderRadius: 10,
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    marginVertical: 10,
+    borderRadius: 12,
+    paddingHorizontal: 40,
+    paddingVertical: 20,
+    marginBottom: 20,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -247,64 +184,27 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
   },
   highlightText: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#667eea',
   },
-  dateList: {
-    marginBottom: 40,
+  subtitle: {
+    fontSize: 20,
+    color: '#333',
+    fontWeight: '600',
   },
-  dateItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'white',
+  infoBox: {
+    backgroundColor: '#f0f4ff',
     borderRadius: 12,
     padding: 20,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  dateItemSelected: {
-    borderColor: '#667eea',
-    backgroundColor: '#f8f9ff',
-  },
-  dateInfo: {
-    flex: 1,
-  },
-  dateText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 5,
-  },
-  dateTextSelected: {
-    color: '#667eea',
-  },
-  hospitalText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  hospitalTextSelected: {
-    color: '#667eea',
-  },
-  radioButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#ddd',
+    marginBottom: 40,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  radioButtonSelected: {
-    borderColor: '#667eea',
-  },
-  radioButtonInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#667eea',
+  infoText: {
+    fontSize: 16,
+    color: '#667eea',
+    textAlign: 'center',
+    lineHeight: 24,
   },
   button: {
     backgroundColor: '#667eea',
@@ -316,6 +216,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 5,
+    marginTop: 'auto',
   },
   buttonDisabled: {
     backgroundColor: '#B8B8D1',

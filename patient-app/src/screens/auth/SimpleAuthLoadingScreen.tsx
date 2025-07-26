@@ -6,6 +6,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  TouchableOpacity,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -28,15 +30,14 @@ const SimpleAuthLoadingScreen: React.FC<SimpleAuthLoadingScreenProps> = ({
   route
 }) => {
   const { authData, userName, birthDate, phoneNumber } = route.params;
-  const [status, setStatus] = useState('건강정보를 받아오는 중...');
+  const [status, setStatus] = useState('카카오톡 지갑에서 인증을 진행해주세요');
   const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    fetchHealthData();
-  }, []);
+  const [isWaitingForAuth, setIsWaitingForAuth] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   const fetchHealthData = async () => {
     try {
+      setIsLoading(true);
       console.log('건강정보 조회 시작');
       console.log('authData:', authData);
 
@@ -143,7 +144,11 @@ const SimpleAuthLoadingScreen: React.FC<SimpleAuthLoadingScreenProps> = ({
         [
           {
             text: '다시 시도',
-            onPress: () => fetchHealthData(),
+            onPress: () => {
+              setIsWaitingForAuth(true);
+              setIsLoading(false);
+              setProgress(0);
+            },
           },
           {
             text: '취소',
@@ -152,6 +157,8 @@ const SimpleAuthLoadingScreen: React.FC<SimpleAuthLoadingScreenProps> = ({
           },
         ]
       );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -160,9 +167,7 @@ const SimpleAuthLoadingScreen: React.FC<SimpleAuthLoadingScreenProps> = ({
     if (!healthData) return null;
 
     // Tilko API 응답 구조에 따라 파싱
-    // 실제 응답 구조를 보고 수정 필요
     if (Array.isArray(healthData)) {
-      // 최신 검진 결과 찾기
       const latest = healthData[0];
       return latest?.[key] || null;
     }
@@ -174,7 +179,6 @@ const SimpleAuthLoadingScreen: React.FC<SimpleAuthLoadingScreenProps> = ({
   const checkDialysisFromMedications = (medicationData: any): boolean => {
     if (!medicationData) return false;
 
-    // 투석 관련 약물이나 처치 확인
     const dialysisKeywords = ['투석', '혈액투석', '복막투석', 'dialysis'];
 
     if (Array.isArray(medicationData)) {
@@ -195,7 +199,6 @@ const SimpleAuthLoadingScreen: React.FC<SimpleAuthLoadingScreenProps> = ({
 
     const diseases = new Map();
 
-    // 약물로부터 질환 추론
     medicationData.forEach((med: any) => {
       // 고혈압약
       if (med.name?.includes('암로디핀') ||
@@ -218,8 +221,6 @@ const SimpleAuthLoadingScreen: React.FC<SimpleAuthLoadingScreenProps> = ({
           medications: [med.name],
         });
       }
-
-      // 추가 질환 매핑...
     });
 
     return Array.from(diseases.values());
@@ -237,16 +238,67 @@ const SimpleAuthLoadingScreen: React.FC<SimpleAuthLoadingScreenProps> = ({
 
   // CKD 설명
   const getCKDDescription = (eGFR: number | null): string => {
-    if (!eGFR) return '신기능 정보 없음';
-    if (eGFR >= 90) return '정상 신기능';
-    if (eGFR >= 60) return '경미한 신기능 저하';
-    if (eGFR >= 30) return '중등도 신기능 저하';
-    if (eGFR >= 15) return '중증 신기능 저하';
-    return '말기 신부전';
+    if (!eGFR) return '정보 없음';
+    if (eGFR >= 90) return '정상 또는 경미한 손상';
+    if (eGFR >= 60) return '경도 감소';
+    if (eGFR >= 30) return '중등도 감소';
+    if (eGFR >= 15) return '중증 감소';
+    return '신부전';
   };
 
+  // 인증 대기 화면
+  if (isWaitingForAuth && !isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.content}>
+          <Text style={styles.logo}>
+            Care Plus<Text style={styles.plus}>+</Text>
+          </Text>
 
+          <View style={styles.authWaitingContainer}>
+            <View style={styles.kakaoIconContainer}>
+              <Text style={styles.kakaoIcon}>💬</Text>
+            </View>
 
+            <Text style={styles.waitingTitle}>
+              카카오톡 지갑에서{'\n'}인증을 진행해주세요
+            </Text>
+
+            <Text style={styles.waitingSubText}>
+              카카오톡 앱을 열고 지갑에서{'\n'}간편인증을 완료해주세요
+            </Text>
+
+            <TouchableOpacity
+              style={styles.completeButton}
+              onPress={() => {
+                setIsWaitingForAuth(false);
+                fetchHealthData();
+              }}
+            >
+              <Text style={styles.completeButtonText}>
+                인증을 완료했습니다
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Text style={styles.cancelButtonText}>
+                취소
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.notice}>
+            ※ 2분 이내에 인증을 완료해주세요
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // 건강정보 조회 중 화면
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
@@ -260,23 +312,25 @@ const SimpleAuthLoadingScreen: React.FC<SimpleAuthLoadingScreenProps> = ({
 
           <View style={styles.progressBar}>
             <View
-              style={[styles.progressFill, { width: `${progress}%` }]}
+              style={[
+                styles.progressFill,
+                { width: `${progress}%` }
+              ]}
             />
           </View>
 
           <Text style={styles.subText}>
-            안전하게 암호화된 통신으로{'\n'}
-            건강보험공단에서 정보를 가져옵니다
+            잠시만 기다려주세요{'\n'}
+            건강정보를 안전하게 가져오고 있습니다
           </Text>
         </View>
 
         <View style={styles.infoBox}>
-          <Text style={styles.infoTitle}>📋 조회 중인 정보</Text>
-          <Text style={styles.infoItem}>• 신장, 체중 (건강검진)</Text>
+          <Text style={styles.infoTitle}>조회중인 정보</Text>
+          <Text style={styles.infoItem}>• 최근 건강검진 결과</Text>
           <Text style={styles.infoItem}>• 신기능 검사 결과 (크레아티닌, eGFR)</Text>
-          <Text style={styles.infoItem}>• 투석 여부 (진료내역)</Text>
-          <Text style={styles.infoItem}>• 기저질환 정보 (진료내역)</Text>
-          <Text style={styles.infoItem}>• 현재 복용 중인 약물 (투약내역)</Text>
+          <Text style={styles.infoItem}>• 기저질환 정보 (고혈압, 당뇨 등)</Text>
+          <Text style={styles.infoItem}>• 복용 중인 약물 (투약내역)</Text>
         </View>
 
         <Text style={styles.notice}>
@@ -307,6 +361,63 @@ const styles = StyleSheet.create({
   plus: {
     color: '#C7D2FE',
   },
+  // 인증 대기 화면 스타일
+  authWaitingContainer: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  kakaoIconContainer: {
+    width: 80,
+    height: 80,
+    backgroundColor: '#FEE500',
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  kakaoIcon: {
+    fontSize: 40,
+  },
+  waitingTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 32,
+  },
+  waitingSubText: {
+    fontSize: 16,
+    color: '#E0E7FF',
+    textAlign: 'center',
+    marginBottom: 40,
+    lineHeight: 24,
+  },
+  completeButton: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    width: '100%',
+    maxWidth: 280,
+  },
+  completeButtonText: {
+    color: '#6366F1',
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  cancelButton: {
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+  },
+  cancelButtonText: {
+    color: '#E0E7FF',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  // 로딩 화면 스타일
   loadingContainer: {
     alignItems: 'center',
     marginBottom: 40,

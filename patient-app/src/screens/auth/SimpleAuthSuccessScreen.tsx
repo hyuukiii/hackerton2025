@@ -4,62 +4,122 @@ import {
   View,
   Text,
   StyleSheet,
+  TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface SimpleAuthSuccessScreenProps {
   navigation: any;
   route: {
     params: {
-      authData: any;
-      userName: string;
-      birthDate: string;
-      phoneNumber: string;
+      healthData: any;
     };
   };
 }
 
-const SimpleAuthSuccessScreen: React.FC<SimpleAuthSuccessScreenProps> = ({ navigation, route }) => {
-  const { authData, userName, birthDate, phoneNumber } = route.params;
+const SimpleAuthSuccessScreen: React.FC<SimpleAuthSuccessScreenProps> = ({
+  navigation,
+  route
+}) => {
+  const { healthData } = route.params || {};
 
   useEffect(() => {
-    // 2초 후 사용자 정보 입력 화면으로 이동
-    const timer = setTimeout(() => {
-      navigation.replace('UserInfo', {
-        authData,
-        userName,
-        birthDate,
-        phoneNumber,
-      });
-    }, 2000);
+    console.log('SimpleAuthSuccessScreen 마운트됨');
+    console.log('건강데이터:', healthData);
+  }, []);
 
-    return () => clearTimeout(timer);
-  }, [navigation, authData, userName, birthDate, phoneNumber]);
+  const handleContinue = async () => {
+    try {
+      // registerData에서 기본 정보 가져오기
+      const registerDataStr = await AsyncStorage.getItem('registerData');
+      const registerData = registerDataStr ? JSON.parse(registerDataStr) : {};
+
+      // authData 가져오기
+      const authDataStr = await AsyncStorage.getItem('authData');
+      const authData = authDataStr ? JSON.parse(authDataStr) : {};
+
+      console.log('UserInfoScreen으로 이동 - registerData:', registerData);
+      console.log('UserInfoScreen으로 이동 - authData:', authData);
+
+      // UserInfoScreen으로 이동
+      navigation.navigate('UserInfo', {
+        authData: authData,
+        userName: registerData.userName || healthData.name,
+        birthDate: registerData.birthDate, // 6자리 형식 (981014)
+        phoneNumber: registerData.phoneNumber,
+      });
+    } catch (error) {
+      console.error('다음 화면 이동 오류:', error);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.logo}>
-          Care Plus<Text style={styles.plus}>+</Text>
-        </Text>
-
+      <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.successContainer}>
           <View style={styles.iconContainer}>
-            <Ionicons name="checkmark-circle" size={80} color="#667eea" />
+            <Ionicons name="checkmark-circle" size={80} color="#6366F1" />
           </View>
 
-          <Text style={styles.successTitle}>
-            사용자님의 건강 정보를{'\n'}성공적으로 받아왔습니다!
+          <Text style={styles.title}>
+            건강정보를{'\n'}성공적으로 받아왔습니다!
           </Text>
 
-          <View style={styles.infoBox}>
-            <Text style={styles.infoText}>
-              잠시 후 추가 정보 입력 화면으로 이동합니다
-            </Text>
-          </View>
+          <Text style={styles.subtitle}>
+            회원가입이 완료되었습니다
+          </Text>
+
+          {healthData && (
+            <View style={styles.infoCard}>
+              <Text style={styles.infoTitle}>확인된 정보</Text>
+
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>이름:</Text>
+                <Text style={styles.infoValue}>{healthData.name || '-'}</Text>
+              </View>
+
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>생년월일:</Text>
+                <Text style={styles.infoValue}>
+                  {healthData.birthDate ?
+                    `${healthData.birthDate.substring(0, 2)}.${healthData.birthDate.substring(2, 4)}.${healthData.birthDate.substring(4, 6)}`
+                    : '-'}
+                </Text>
+              </View>
+
+              {healthData.healthCheckup && (
+                <>
+                  <View style={styles.divider} />
+                  <Text style={styles.infoSubtitle}>최근 건강검진</Text>
+                  <Text style={styles.infoText}>
+                    • 검진 데이터가 확인되었습니다
+                  </Text>
+                </>
+              )}
+
+              {healthData.medications && (
+                <>
+                  <View style={styles.divider} />
+                  <Text style={styles.infoSubtitle}>복용 약물</Text>
+                  <Text style={styles.infoText}>
+                    • 투약 내역이 확인되었습니다
+                  </Text>
+                </>
+              )}
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={styles.continueButton}
+            onPress={handleContinue}
+          >
+            <Text style={styles.continueButtonText}>시작하기</Text>
+          </TouchableOpacity>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -70,48 +130,93 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   content: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 30,
-  },
-  logo: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#667eea',
-    marginBottom: 60,
-  },
-  plus: {
-    color: '#999',
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingVertical: 20,
   },
   successContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   iconContainer: {
     marginBottom: 30,
   },
-  successTitle: {
-    fontSize: 20,
+  title: {
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
-    lineHeight: 28,
+    marginBottom: 10,
+    lineHeight: 38,
+  },
+  subtitle: {
+    fontSize: 18,
+    color: '#666',
     marginBottom: 40,
   },
-  infoBox: {
+  infoCard: {
     backgroundColor: 'white',
-    borderRadius: 15,
-    paddingHorizontal: 25,
-    paddingVertical: 20,
-    elevation: 2,
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+    marginBottom: 40,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  infoTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 16,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  infoLabel: {
+    fontSize: 16,
+    color: '#666',
+  },
+  infoValue: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E5E5E5',
+    marginVertical: 16,
+  },
+  infoSubtitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6366F1',
+    marginBottom: 8,
   },
   infoText: {
     fontSize: 14,
     color: '#666',
+    marginBottom: 4,
+  },
+  continueButton: {
+    backgroundColor: '#6366F1',
+    paddingHorizontal: 40,
+    paddingVertical: 16,
+    borderRadius: 12,
+    width: '100%',
+  },
+  continueButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
     textAlign: 'center',
   },
 });

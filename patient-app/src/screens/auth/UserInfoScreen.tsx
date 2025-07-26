@@ -1,5 +1,5 @@
 // src/screens/auth/UserInfoScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -28,21 +28,38 @@ interface UserInfoScreenProps {
 }
 
 const UserInfoScreen: React.FC<UserInfoScreenProps> = ({ navigation, route }) => {
-  const { authData, userName, birthDate, phoneNumber } = route.params;
+  const { authData, userName, birthDate, phoneNumber } = route.params || {};
+
+  // 디버깅 로그
+  useEffect(() => {
+    console.log('UserInfoScreen params:', route.params);
+    console.log('birthDate:', birthDate);
+    console.log('phoneNumber:', phoneNumber);
+  }, []);
 
   // 자동 입력 필드
-  const [name] = useState(userName);
+  const [name] = useState(userName || '');
+
   const formatDisplayBirthDate = () => {
+    if (!birthDate || birthDate.length < 6) {
+      return '';
+    }
     // YYMMDD -> YYYY.MM.DD
     const year = parseInt(birthDate.substring(0, 2));
     const displayYear = year > 50 ? 1900 + year : 2000 + year;
     return `${displayYear}.${birthDate.substring(2, 4)}.${birthDate.substring(4, 6)}`;
   };
+
   const [displayBirthDate] = useState(formatDisplayBirthDate());
+
   const formatDisplayPhone = () => {
+    if (!phoneNumber || phoneNumber.length < 11) {
+      return '';
+    }
     // 01012345678 -> 010-1234-5678
     return `${phoneNumber.substring(0, 3)}-${phoneNumber.substring(3, 7)}-${phoneNumber.substring(7)}`;
   };
+
   const [displayPhone] = useState(formatDisplayPhone());
 
   // 수동 입력 필드
@@ -89,14 +106,19 @@ const UserInfoScreen: React.FC<UserInfoScreenProps> = ({ navigation, route }) =>
 
       await AsyncStorage.setItem('userInfo', JSON.stringify(userInfo));
 
-      // 건강검진 데이터 조회 API 호출
-      const healthData = await api.post('/integrated/health-data', authData);
+      // 이미 받아온 건강 데이터 가져오기
+      const healthDataStr = await AsyncStorage.getItem('healthData');
+      const healthData = healthDataStr ? JSON.parse(healthDataStr) : null;
 
-      await AsyncStorage.setItem('healthData', JSON.stringify(healthData));
+      // authData도 가져오기
+      const authDataStr = await AsyncStorage.getItem('authData');
+      const authDataParsed = authDataStr ? JSON.parse(authDataStr) : authData;
 
-      // 건강검진 날짜 선택 화면으로 이동
+      console.log('건강검진 날짜 화면으로 이동');
+
+      // 건강검진 날짜 화면으로 이동
       navigation.navigate('HealthCheckDate', {
-        authData,
+        authData: authDataParsed,
         userInfo,
         healthData,
       });
