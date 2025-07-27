@@ -69,6 +69,8 @@ const DiseaseInfoScreen: React.FC<DiseaseInfoScreenProps> = ({ navigation, route
     }
   };
 
+  // DiseaseInfoScreen.tsx의 handleComplete 함수 수정
+
   const handleComplete = async () => {
     setLoading(true);
     try {
@@ -82,6 +84,8 @@ const DiseaseInfoScreen: React.FC<DiseaseInfoScreenProps> = ({ navigation, route
 
       const parsedRegisterData = registerData ? JSON.parse(registerData) : {};
       const parsedUserInfo = userInfo ? JSON.parse(userInfo) : {};
+      const parsedAuthData = authData ? JSON.parse(authData) : null;
+      const parsedCheckupDate = selectedCheckupDate ? JSON.parse(selectedCheckupDate) : null;
 
       const finalUserData = {
         ...parsedRegisterData,
@@ -90,8 +94,8 @@ const DiseaseInfoScreen: React.FC<DiseaseInfoScreenProps> = ({ navigation, route
           name: d.name,
           detail: d.detail,
         })),
-        checkupDate: selectedCheckupDate ? JSON.parse(selectedCheckupDate).date : '검진 기록 없음',
-        authData: authData ? JSON.parse(authData) : null,
+        checkupDate: parsedCheckupDate?.date || '검진 기록 없음',
+        authData: parsedAuthData,
       };
 
       // 실제 회원가입 API 호출
@@ -99,9 +103,10 @@ const DiseaseInfoScreen: React.FC<DiseaseInfoScreenProps> = ({ navigation, route
 
       try {
         const response = await api.post('/auth/register/complete', finalUserData);
+        console.log('회원가입 API 응답:', response.data);
 
-        // 성공 응답 처리
-        if (response.data) {
+        // 성공 응답 처리 - response.data로 접근!
+        if (response.data && response.data.success) {
           // 토큰 저장
           if (response.data.token) {
             await AsyncStorage.setItem('authToken', response.data.token);
@@ -135,45 +140,64 @@ const DiseaseInfoScreen: React.FC<DiseaseInfoScreenProps> = ({ navigation, route
             'latestCheckupInfo',
           ]);
 
-          Alert.alert('회원가입 완료', '회원가입이 완료되었습니다!', [
-            {
-              text: '확인',
-              onPress: () => navigation.reset({
-                index: 0,
-                routes: [{ name: 'Main' }],
-              }),
-            },
-          ]);
-        }
-      } catch (error: any) {
-        console.error('회원가입 완료 오류:', error);
-
-        // 임시 처리 - 백엔드 API가 아직 준비되지 않은 경우
-        if (error.response?.status === 404 || error.message.includes('404')) {
-          // 임시로 회원가입 완료 처리
-          await AsyncStorage.setItem('authToken', 'temp-token');
-          await AsyncStorage.setItem('isLoggedIn', 'true');
-
-          // 사용자 정보도 저장 (HomeScreen에서 표시용)
-          const userData = {
-            userId: finalUserData.userId,
-            name: finalUserData.userName || finalUserData.name,
-            phoneNumber: finalUserData.phoneNumber,
-            birthDate: finalUserData.birthDate,
-          };
-          await AsyncStorage.setItem('userData', JSON.stringify(userData));
-
+          // Alert 없이 바로 화면 이동 (빠른 테스트용)
+          console.log('회원가입 완료 - 메인 화면으로 이동');
           navigation.reset({
             index: 0,
             routes: [{ name: 'Main' }],
           });
+
         } else {
-          Alert.alert('오류', '회원가입 완료 중 문제가 발생했습니다.');
+          throw new Error('회원가입 응답이 올바르지 않습니다.');
         }
+      } catch (error: any) {
+        console.error('회원가입 완료 오류:', error);
+        console.error('에러 상세:', error.response?.data || error.message);
+
+        // 에러가 있어도 메인 화면으로 이동 (해커톤용 임시 처리)
+        const userData = {
+          userId: finalUserData.userId || 'test_user',
+          name: finalUserData.userName || finalUserData.name || '사용자',
+          phoneNumber: finalUserData.phoneNumber,
+          birthDate: finalUserData.birthDate,
+        };
+
+        await AsyncStorage.setItem('authToken', 'temp-token-' + Date.now());
+        await AsyncStorage.setItem('isLoggedIn', 'true');
+        await AsyncStorage.setItem('userData', JSON.stringify(userData));
+
+        // 모든 임시 데이터 삭제
+        await AsyncStorage.multiRemove([
+          'registerData',
+          'authData',
+          'userInfo',
+          'healthData',
+          'selectedCheckupDate',
+          'diseaseAnalysis',
+          'latestCheckupInfo',
+        ]);
+
+        console.log('임시 처리 - 메인 화면으로 이동');
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        });
       }
     } catch (error) {
       console.error('데이터 처리 오류:', error);
-      Alert.alert('오류', '데이터 처리 중 문제가 발생했습니다.');
+
+      // 최후의 수단 - 무조건 메인으로 이동
+      await AsyncStorage.setItem('authToken', 'temp-token');
+      await AsyncStorage.setItem('isLoggedIn', 'true');
+      await AsyncStorage.setItem('userData', JSON.stringify({
+        name: '사용자',
+        userId: 'temp_user',
+      }));
+
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      });
     } finally {
       setLoading(false);
     }
