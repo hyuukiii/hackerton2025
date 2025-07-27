@@ -70,7 +70,6 @@ const DiseaseInfoScreen: React.FC<DiseaseInfoScreenProps> = ({ navigation, route
   };
 
   // DiseaseInfoScreen.tsx의 handleComplete 함수 수정
-
   const handleComplete = async () => {
     setLoading(true);
     try {
@@ -102,19 +101,20 @@ const DiseaseInfoScreen: React.FC<DiseaseInfoScreenProps> = ({ navigation, route
       console.log('회원가입 완료 요청:', finalUserData);
 
       try {
+        // axios interceptor가 response.data를 반환하므로 response가 곧 data입니다
         const response = await api.post('/auth/register/complete', finalUserData);
-        console.log('회원가입 API 응답:', response.data);
+        console.log('회원가입 API 응답:', response);
 
-        // 성공 응답 처리 - response.data로 접근!
-        if (response.data && response.data.success) {
+        // 성공 응답 처리 - response.data가 아닌 response로 직접 접근!
+        if (response && response.success) {
           // 토큰 저장
-          if (response.data.token) {
-            await AsyncStorage.setItem('authToken', response.data.token);
+          if (response.token) {
+            await AsyncStorage.setItem('authToken', response.token);
           }
 
           // 사용자 정보 저장 (HomeScreen에서 사용)
-          if (response.data.user) {
-            await AsyncStorage.setItem('userData', JSON.stringify(response.data.user));
+          if (response.user) {
+            await AsyncStorage.setItem('userData', JSON.stringify(response.user));
           } else {
             // 백엔드에서 user 정보가 없는 경우 프론트엔드 데이터로 저장
             const userData = {
@@ -140,7 +140,7 @@ const DiseaseInfoScreen: React.FC<DiseaseInfoScreenProps> = ({ navigation, route
             'latestCheckupInfo',
           ]);
 
-          // Alert 없이 바로 화면 이동 (빠른 테스트용)
+          // Alert 없이 바로 화면 이동
           console.log('회원가입 완료 - 메인 화면으로 이동');
           navigation.reset({
             index: 0,
@@ -148,11 +148,12 @@ const DiseaseInfoScreen: React.FC<DiseaseInfoScreenProps> = ({ navigation, route
           });
 
         } else {
-          throw new Error('회원가입 응답이 올바르지 않습니다.');
+          // response가 있지만 success가 false인 경우도 처리
+          throw new Error(response?.message || '회원가입 처리에 실패했습니다.');
         }
       } catch (error: any) {
         console.error('회원가입 완료 오류:', error);
-        console.error('에러 상세:', error.response?.data || error.message);
+        console.error('에러 상세:', error.response || error.message);
 
         // 에러가 있어도 메인 화면으로 이동 (해커톤용 임시 처리)
         const userData = {
