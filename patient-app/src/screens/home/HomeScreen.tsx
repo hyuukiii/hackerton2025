@@ -67,7 +67,7 @@ const menuItems: MenuItem[] = [
 ];
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
-  const [userName, setUserName] = useState('김춘식');
+  const [userName, setUserName] = useState('사용자');
 
   useEffect(() => {
     loadUserData();
@@ -76,9 +76,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const loadUserData = async () => {
     try {
       const userData = await AsyncStorage.getItem('userData');
+      console.log('HomeScreen - 로드된 userData:', userData);
+
       if (userData) {
         const user = JSON.parse(userData);
-        setUserName(user.name || '김춘식');
+        // name 또는 userName 모두 확인
+        const displayName = user.name || user.userName || '사용자';
+        setUserName(displayName);
+        console.log('사용자 이름 설정:', displayName);
+      } else {
+        console.log('userData가 없음 - 기본값 사용');
       }
     } catch (error) {
       console.error('Failed to load user data:', error);

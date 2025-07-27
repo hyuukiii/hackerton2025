@@ -71,75 +71,109 @@ const DiseaseInfoScreen: React.FC<DiseaseInfoScreenProps> = ({ navigation, route
 
   const handleComplete = async () => {
     setLoading(true);
-
     try {
-      // 회원가입 데이터 준비
-      const registerData = await AsyncStorage.getItem('registerData');
+      // 저장된 데이터들 가져오기
+      const [registerData, authData, userInfo, selectedCheckupDate] = await Promise.all([
+        AsyncStorage.getItem('registerData'),
+        AsyncStorage.getItem('authData'),
+        AsyncStorage.getItem('userInfo'),
+        AsyncStorage.getItem('selectedCheckupDate'),
+      ]);
+
       const parsedRegisterData = registerData ? JSON.parse(registerData) : {};
+      const parsedUserInfo = userInfo ? JSON.parse(userInfo) : {};
 
       const finalUserData = {
         ...parsedRegisterData,
-        ...userInfo,
+        ...parsedUserInfo,
         diseases: diseases.map(d => ({
           name: d.name,
           detail: d.detail,
         })),
-        checkupDate: selectedCheckupDate.date,
-        authData: authData,
+        checkupDate: selectedCheckupDate ? JSON.parse(selectedCheckupDate).date : '검진 기록 없음',
+        authData: authData ? JSON.parse(authData) : null,
       };
 
       // 실제 회원가입 API 호출
       console.log('회원가입 완료 요청:', finalUserData);
-      const response = await api.post('/auth/register/complete', finalUserData);
 
-      // 토큰 저장
-      if (response.token) {
-        await AsyncStorage.setItem('authToken', response.token);
-      }
-      if (response.user) {
-        await AsyncStorage.setItem('userData', JSON.stringify(response.user));
-      }
+      try {
+        const response = await api.post('/auth/register/complete', finalUserData);
 
-      // 로그인 상태 저장
-      await AsyncStorage.setItem('isLoggedIn', 'true');
+        // 성공 응답 처리
+        if (response.data) {
+          // 토큰 저장
+          if (response.data.token) {
+            await AsyncStorage.setItem('authToken', response.data.token);
+          }
 
-      // 모든 임시 데이터 삭제
-      await AsyncStorage.multiRemove([
-        'registerData',
-        'authData',
-        'userInfo',
-        'healthData',
-        'selectedCheckupDate',
-        'diseaseAnalysis',
-        'latestCheckupInfo',
-      ]);
+          // 사용자 정보 저장 (HomeScreen에서 사용)
+          if (response.data.user) {
+            await AsyncStorage.setItem('userData', JSON.stringify(response.data.user));
+          } else {
+            // 백엔드에서 user 정보가 없는 경우 프론트엔드 데이터로 저장
+            const userData = {
+              userId: finalUserData.userId,
+              name: finalUserData.userName || finalUserData.name,
+              phoneNumber: finalUserData.phoneNumber,
+              birthDate: finalUserData.birthDate,
+            };
+            await AsyncStorage.setItem('userData', JSON.stringify(userData));
+          }
 
-      Alert.alert('회원가입 완료', '회원가입이 완료되었습니다!', [
-        {
-          text: '확인',
-          onPress: () => navigation.reset({
+          // 로그인 상태 저장
+          await AsyncStorage.setItem('isLoggedIn', 'true');
+
+          // 모든 임시 데이터 삭제
+          await AsyncStorage.multiRemove([
+            'registerData',
+            'authData',
+            'userInfo',
+            'healthData',
+            'selectedCheckupDate',
+            'diseaseAnalysis',
+            'latestCheckupInfo',
+          ]);
+
+          Alert.alert('회원가입 완료', '회원가입이 완료되었습니다!', [
+            {
+              text: '확인',
+              onPress: () => navigation.reset({
+                index: 0,
+                routes: [{ name: 'Main' }],
+              }),
+            },
+          ]);
+        }
+      } catch (error: any) {
+        console.error('회원가입 완료 오류:', error);
+
+        // 임시 처리 - 백엔드 API가 아직 준비되지 않은 경우
+        if (error.response?.status === 404 || error.message.includes('404')) {
+          // 임시로 회원가입 완료 처리
+          await AsyncStorage.setItem('authToken', 'temp-token');
+          await AsyncStorage.setItem('isLoggedIn', 'true');
+
+          // 사용자 정보도 저장 (HomeScreen에서 표시용)
+          const userData = {
+            userId: finalUserData.userId,
+            name: finalUserData.userName || finalUserData.name,
+            phoneNumber: finalUserData.phoneNumber,
+            birthDate: finalUserData.birthDate,
+          };
+          await AsyncStorage.setItem('userData', JSON.stringify(userData));
+
+          navigation.reset({
             index: 0,
             routes: [{ name: 'Main' }],
-          }),
-        },
-      ]);
-
-    } catch (error: any) {
-      console.error('회원가입 완료 오류:', error);
-
-      // 임시 처리 - 백엔드 API가 아직 준비되지 않은 경우
-      if (error.response?.status === 404 || error.message.includes('404')) {
-        // 임시로 회원가입 완료 처리
-        await AsyncStorage.setItem('authToken', 'temp-token');
-        await AsyncStorage.setItem('isLoggedIn', 'true');
-
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Main' }],
-        });
-      } else {
-        Alert.alert('오류', '회원가입 완료 중 문제가 발생했습니다.');
+          });
+        } else {
+          Alert.alert('오류', '회원가입 완료 중 문제가 발생했습니다.');
+        }
       }
+    } catch (error) {
+      console.error('데이터 처리 오류:', error);
+      Alert.alert('오류', '데이터 처리 중 문제가 발생했습니다.');
     } finally {
       setLoading(false);
     }
