@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import api from '../../services/api';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 interface DiseaseInfoScreenProps {
   navigation: any;
@@ -19,287 +19,165 @@ interface DiseaseInfoScreenProps {
       authData: any;
       userInfo: any;
       healthData: any;
-      selectedCheckupDate: any;
+      checkupInfo: any;
       diseaseAnalysis: any;
     };
   };
 }
 
-interface Disease {
-  name: string;
-  detail: string;
-  severity: 'high' | 'medium' | 'low';
-}
-
 const DiseaseInfoScreen: React.FC<DiseaseInfoScreenProps> = ({ navigation, route }) => {
-  const { authData, userInfo, healthData, selectedCheckupDate, diseaseAnalysis } = route.params;
+  const { authData, userInfo, healthData, checkupInfo, diseaseAnalysis } = route.params;
+  const [diseases, setDiseases] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [diseases, setDiseases] = useState<Disease[]>([]);
 
   useEffect(() => {
     console.log('DiseaseInfoScreen - diseaseAnalysis:', diseaseAnalysis);
     parseDiseases();
   }, [diseaseAnalysis]);
 
-  // 기저질환 파싱
   const parseDiseases = () => {
-    if (!diseaseAnalysis || diseaseAnalysis.status === 'NO_DATA') {
-      setDiseases([]);
-      return;
-    }
-
-    // 실제 API 응답에 맞게 파싱
-    if (diseaseAnalysis.predictedDiseases && diseaseAnalysis.predictedDiseases.length > 0) {
-      const parsed = diseaseAnalysis.predictedDiseases.map((disease: any) => ({
-        name: disease.name || disease.diseaseName,
-        detail: disease.detail || disease.reason || '',
-        severity: disease.riskLevel?.toLowerCase() || disease.severity || 'medium',
-      }));
-      setDiseases(parsed);
-    } else if (diseaseAnalysis.diseases) {
-      // 다른 응답 형식 처리
-      const parsed = diseaseAnalysis.diseases.map((disease: any) => ({
-        name: disease.name,
-        detail: disease.description || '',
-        severity: disease.riskLevel?.toLowerCase() || 'medium',
-      }));
-      setDiseases(parsed);
-    } else {
-      setDiseases([]);
+    if (diseaseAnalysis?.diseases && Array.isArray(diseaseAnalysis.diseases)) {
+      setDiseases(diseaseAnalysis.diseases);
     }
   };
 
-  // DiseaseInfoScreen.tsx의 handleComplete 함수 수정
-  const handleComplete = async () => {
+  const handleConfirm = async () => {
     setLoading(true);
+
     try {
-      // 저장된 데이터들 가져오기
-      const [registerData, authData, userInfo, selectedCheckupDate] = await Promise.all([
-        AsyncStorage.getItem('registerData'),
-        AsyncStorage.getItem('authData'),
-        AsyncStorage.getItem('userInfo'),
-        AsyncStorage.getItem('selectedCheckupDate'),
-      ]);
-
-      const parsedRegisterData = registerData ? JSON.parse(registerData) : {};
-      const parsedUserInfo = userInfo ? JSON.parse(userInfo) : {};
-      const parsedAuthData = authData ? JSON.parse(authData) : null;
-      const parsedCheckupDate = selectedCheckupDate ? JSON.parse(selectedCheckupDate) : null;
-
-      const finalUserData = {
-        ...parsedRegisterData,
-        ...parsedUserInfo,
-        diseases: diseases.map(d => ({
-          name: d.name,
-          detail: d.detail,
-        })),
-        checkupDate: parsedCheckupDate?.date || '검진 기록 없음',
-        authData: parsedAuthData,
+      // 사용자 정보 저장
+      const userData = {
+        ...userInfo,
+        diseases: diseases,
+        lastCheckupDate: checkupInfo?.date,
+        lastCheckupHospital: checkupInfo?.hospital,
       };
+      await AsyncStorage.setItem('userData', JSON.stringify(userData));
 
-      // 실제 회원가입 API 호출
-      console.log('회원가입 완료 요청:', finalUserData);
+      // AI 분석 질환을 별도로 저장 (병력 관리에서 사용)
+      if (diseases.length > 0) {
+        await AsyncStorage.setItem('aiAnalyzedDiseases', JSON.stringify(diseases));
+      }
 
-      try {
-        // axios interceptor가 response.data를 반환하므로 response가 곧 data입니다
-        const response = await api.post('/auth/register/complete', finalUserData);
-        console.log('회원가입 API 응답:', response);
-
-        // 성공 응답 처리 - response.data가 아닌 response로 직접 접근!
-        if (response && response.success) {
-          // 토큰 저장
-          if (response.token) {
-            await AsyncStorage.setItem('authToken', response.token);
-          }
-
-          // 사용자 정보 저장 (HomeScreen에서 사용)
-          if (response.user) {
-            await AsyncStorage.setItem('userData', JSON.stringify(response.user));
-          } else {
-            // 백엔드에서 user 정보가 없는 경우 프론트엔드 데이터로 저장
-            const userData = {
-              userId: finalUserData.userId,
-              name: finalUserData.userName || finalUserData.name,
-              phoneNumber: finalUserData.phoneNumber,
-              birthDate: finalUserData.birthDate,
-            };
-            await AsyncStorage.setItem('userData', JSON.stringify(userData));
-          }
-
-          // 로그인 상태 저장
-          await AsyncStorage.setItem('isLoggedIn', 'true');
-
-          // 모든 임시 데이터 삭제
-          await AsyncStorage.multiRemove([
-            'registerData',
-            'authData',
-            'userInfo',
-            'healthData',
-            'selectedCheckupDate',
-            'diseaseAnalysis',
-            'latestCheckupInfo',
-          ]);
-
-          // Alert 없이 바로 화면 이동
-          console.log('회원가입 완료 - 메인 화면으로 이동');
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'Main' }],
-          });
-
-        } else {
-          // response가 있지만 success가 false인 경우도 처리
-          throw new Error(response?.message || '회원가입 처리에 실패했습니다.');
-        }
-      } catch (error: any) {
-        console.error('회원가입 완료 오류:', error);
-        console.error('에러 상세:', error.response || error.message);
-
-        // 에러가 있어도 메인 화면으로 이동 (해커톤용 임시 처리)
-        const userData = {
-          userId: finalUserData.userId || 'test_user',
-          name: finalUserData.userName || finalUserData.name || '사용자',
-          phoneNumber: finalUserData.phoneNumber,
-          birthDate: finalUserData.birthDate,
-        };
-
-        await AsyncStorage.setItem('authToken', 'temp-token-' + Date.now());
-        await AsyncStorage.setItem('isLoggedIn', 'true');
-        await AsyncStorage.setItem('userData', JSON.stringify(userData));
-
-        // 모든 임시 데이터 삭제
-        await AsyncStorage.multiRemove([
-          'registerData',
-          'authData',
-          'userInfo',
-          'healthData',
-          'selectedCheckupDate',
-          'diseaseAnalysis',
-          'latestCheckupInfo',
-        ]);
-
-        console.log('임시 처리 - 메인 화면으로 이동');
+      // 회원가입 또는 로그인 완료 처리
+      if (authData.isFromRegister) {
+        // 회원가입 완료
+        Alert.alert(
+          '회원가입 완료',
+          '회원가입이 성공적으로 완료되었습니다.',
+          [
+            {
+              text: '확인',
+              onPress: () => {
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'LoginSuccess' }],
+                });
+              },
+            },
+          ],
+        );
+      } else {
+        // 로그인 완료
         navigation.reset({
           index: 0,
-          routes: [{ name: 'Main' }],
+          routes: [{ name: 'LoginSuccess' }],
         });
       }
     } catch (error) {
-      console.error('데이터 처리 오류:', error);
-
-      // 최후의 수단 - 무조건 메인으로 이동
-      await AsyncStorage.setItem('authToken', 'temp-token');
-      await AsyncStorage.setItem('isLoggedIn', 'true');
-      await AsyncStorage.setItem('userData', JSON.stringify({
-        name: '사용자',
-        userId: 'temp_user',
-      }));
-
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Main' }],
-      });
+      console.error('데이터 저장 실패:', error);
+      Alert.alert('오류', '정보 저장에 실패했습니다.');
     } finally {
       setLoading(false);
     }
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'high':
-        return '#FF3B30';
-      case 'medium':
-        return '#FF9500';
-      case 'low':
-        return '#34C759';
-      default:
-        return '#667eea';
+  const getDiseaseIcon = (disease: string) => {
+    const iconMap: { [key: string]: string } = {
+      '고혈압': 'heart-pulse',
+      '당뇨병': 'water',
+      '고지혈증': 'water-outline',
+      '신부전': 'kidney',
+      '간질환': 'stomach',
+      '심장질환': 'heart',
+      '폐질환': 'lungs',
+      '뇌혈관질환': 'brain',
+      '암': 'ribbon',
+      '갑상선질환': 'neck-tie',
+    };
+
+    // 질병명에 포함된 키워드로 아이콘 찾기
+    for (const [key, icon] of Object.entries(iconMap)) {
+      if (disease.includes(key)) {
+        return icon;
+      }
     }
+    return 'medical-bag'; // 기본 아이콘
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.logo}>
-          Care Plus<Text style={styles.plus}>+</Text>
-        </Text>
+        <Text style={styles.headerTitle}>건강 정보 분석 결과</Text>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.content}>
-          {diseases.length > 0 ? (
-            <>
-              <View style={styles.titleContainer}>
-                <Text style={styles.title}>
-                  복용 약물을 기반으로{'\n'}
-                  AI가 분석한 결과
-                </Text>
-              </View>
+      <ScrollView style={styles.content}>
+        <View style={styles.infoCard}>
+          <MaterialCommunityIcons name="shield-check" size={60} color="#4CAF50" />
+          <Text style={styles.infoTitle}>AI 기반 건강 분석 완료</Text>
+          <Text style={styles.infoDescription}>
+            {userInfo.name}님의 복약 정보를 분석한 결과입니다.
+          </Text>
+        </View>
 
-              <View style={styles.diseaseList}>
-                {diseases.map((disease, index) => (
-                  <View key={index} style={styles.diseaseItem}>
-                    <View style={styles.diseaseHeader}>
-                      <Text style={[
-                        styles.diseaseName,
-                        { color: getSeverityColor(disease.severity) }
-                      ]}>
-                        {disease.name}
-                      </Text>
-                      {disease.severity === 'high' && (
-                        <View style={styles.warningBadge}>
-                          <Text style={styles.warningText}>주의필요</Text>
-                        </View>
-                      )}
-                    </View>
-                    {disease.detail && (
-                      <Text style={styles.diseaseDetail}>{disease.detail}</Text>
-                    )}
-                  </View>
-                ))}
+        {diseases.length > 0 ? (
+          <View style={styles.diseaseSection}>
+            <Text style={styles.sectionTitle}>추정 기저질환</Text>
+            {diseases.map((disease, index) => (
+              <View key={index} style={styles.diseaseItem}>
+                <MaterialCommunityIcons
+                  name={getDiseaseIcon(disease)}
+                  size={24}
+                  color="#667eea"
+                />
+                <Text style={styles.diseaseName}>{disease}</Text>
               </View>
-
-              <Text style={styles.description}>
-                위 기저질환이 의심됩니다.{'\n\n'}
-                정확한 진단은 의사와 상담하시기 바랍니다.{'\n'}
-                회원님의 건강 정보에 추가하겠습니다.
-              </Text>
-            </>
-          ) : (
-            <>
-              <View style={styles.titleContainer}>
-                <Text style={styles.title}>
-                  복용 약물을 기반으로{'\n'}
-                  AI가 분석한 결과
-                </Text>
-              </View>
-
-              <View style={styles.noDiseaseContainer}>
-                <Text style={styles.noDiseaseText}>
-                  특별한 기저질환이{'\n'}
-                  발견되지 않았습니다
-                </Text>
-                <Text style={styles.healthyText}>
-                  건강한 상태를 유지하고 계십니다! 👍
-                </Text>
-              </View>
-            </>
-          )}
-
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleComplete}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>
-              {loading ? '처리중...' : '회원 가입하기'}
+            ))}
+            <Text style={styles.disclaimer}>
+              * 이 정보는 AI 분석 결과이며, 정확한 진단은 의료진과 상담하세요.
             </Text>
-          </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.noDiseaseSection}>
+            <MaterialCommunityIcons name="check-circle" size={48} color="#4CAF50" />
+            <Text style={styles.noDiseaseText}>
+              현재 복약 정보에서 특별한 기저질환이 발견되지 않았습니다.
+            </Text>
+          </View>
+        )}
+
+        <View style={styles.checkupInfo}>
+          <Text style={styles.checkupTitle}>최근 건강검진 정보</Text>
+          <Text style={styles.checkupDate}>
+            {checkupInfo?.date || '정보 없음'}
+          </Text>
+          {checkupInfo?.hospital && (
+            <Text style={styles.checkupHospital}>{checkupInfo.hospital}</Text>
+          )}
         </View>
       </ScrollView>
+
+      <View style={styles.bottomContainer}>
+        <TouchableOpacity
+          style={[styles.confirmButton, loading && styles.confirmButtonDisabled]}
+          onPress={handleConfirm}
+          disabled={loading}
+        >
+          <Text style={styles.confirmButtonText}>
+            {loading ? '처리 중...' : '확인'}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
@@ -310,130 +188,128 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    alignItems: 'center',
+    backgroundColor: '#667eea',
     paddingVertical: 20,
+    paddingHorizontal: 16,
+    alignItems: 'center',
   },
-  logo: {
-    fontSize: 36,
+  headerTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#667eea',
-  },
-  plus: {
-    color: '#999',
-  },
-  scrollContent: {
-    flexGrow: 1,
+    color: '#fff',
   },
   content: {
-    paddingHorizontal: 30,
-    paddingBottom: 40,
+    flex: 1,
+    padding: 16,
   },
-  titleContainer: {
-    marginBottom: 30,
-    marginTop: 20,
-  },
-  title: {
-    fontSize: 22,
-    color: '#333',
-    fontWeight: '600',
-    lineHeight: 32,
-  },
-  diseaseList: {
-    backgroundColor: 'white',
-    borderRadius: 15,
-    padding: 20,
-    marginBottom: 20,
+  infoCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 16,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  diseaseItem: {
-    marginBottom: 15,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  diseaseItem: {
-    borderBottomWidth: 0,
-  },
-  diseaseHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  diseaseName: {
-    fontSize: 20,
+  infoTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
+    color: '#333',
+    marginTop: 12,
   },
-  warningBadge: {
-    backgroundColor: '#FFE5E5',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  warningText: {
-    fontSize: 12,
-    color: '#FF3B30',
-    fontWeight: '600',
-  },
-  diseaseDetail: {
+  infoDescription: {
     fontSize: 14,
     color: '#666',
-    marginTop: 5,
-    fontStyle: 'italic',
+    marginTop: 8,
+    textAlign: 'center',
   },
-  description: {
+  diseaseSection: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 16,
+  },
+  diseaseItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  diseaseName: {
     fontSize: 16,
     color: '#333',
-    lineHeight: 24,
-    marginBottom: 40,
-    textAlign: 'center',
+    marginLeft: 12,
   },
-  noDiseaseContainer: {
-    backgroundColor: 'white',
-    borderRadius: 15,
-    padding: 30,
-    marginBottom: 40,
+  disclaimer: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 12,
+    fontStyle: 'italic',
+  },
+  noDiseaseSection: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 32,
     alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
+    marginBottom: 16,
   },
   noDiseaseText: {
-    fontSize: 20,
-    color: '#34C759',
-    fontWeight: 'bold',
-    textAlign: 'center',
-    lineHeight: 28,
-    marginBottom: 15,
-  },
-  healthyText: {
     fontSize: 16,
     color: '#666',
+    marginTop: 16,
     textAlign: 'center',
   },
-  button: {
-    backgroundColor: '#667eea',
-    paddingVertical: 18,
+  checkupInfo: {
+    backgroundColor: '#fff',
     borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  checkupTitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  checkupDate: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  checkupHospital: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  bottomContainer: {
+    padding: 16,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  confirmButton: {
+    backgroundColor: '#667eea',
+    borderRadius: 8,
+    paddingVertical: 16,
     alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#667eea',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
   },
-  buttonDisabled: {
-    backgroundColor: '#B8B8D1',
-    shadowOpacity: 0.1,
+  confirmButtonDisabled: {
+    opacity: 0.6,
   },
-  buttonText: {
-    color: 'white',
-    fontSize: 18,
+  confirmButtonText: {
+    color: '#fff',
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });

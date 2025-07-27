@@ -15,6 +15,10 @@ import UserInfoScreen from '../screens/auth/UserInfoScreen';
 import HealthCheckDateScreen from '../screens/auth/HealthCheckDateScreen';
 import DiseaseInfoScreen from '../screens/auth/DiseaseInfoScreen';
 
+// 병력 관리 화면들
+import MedicalHistoryScreen from '../screens/medicalHistory/MedicalHistoryScreen';
+import AddMedicalHistoryScreen from '../screens/medicalHistory/AddMedicalHistoryScreen';
+
 // 임시 화면들
 import { View, Text, StyleSheet } from 'react-native';
 
@@ -33,12 +37,6 @@ const FindPasswordScreen = () => (
 const PrescriptionHistoryScreen = () => (
   <View style={styles.container}>
     <Text style={styles.text}>약물 처방 내역 - 구현 예정</Text>
-  </View>
-);
-
-const MedicalHistoryScreen = () => (
-  <View style={styles.container}>
-    <Text style={styles.text}>병력 관리 - 구현 예정</Text>
   </View>
 );
 
@@ -64,51 +62,38 @@ export type RootStackParamList = {
   Main: undefined;
   PrescriptionHistory: undefined;
   MedicalHistory: undefined;
+  AddMedicalHistory: undefined;
   HealthCheckup: undefined;
   EditHealthInfo: undefined;
 
-  // 간편인증 관련 화면들 - 수정됨
+  // 간편인증 관련 화면들
   SimpleAuth: {
     userId: string;
     password: string;
-    userName?: string;      // 회원가입에서 전달
-    birthDate?: string;     // 회원가입에서 전달
-    phoneNumber?: string;   // 회원가입에서 전달
-    isFromRegister?: boolean; // 회원가입에서 왔는지 표시
+    userName?: string;
+    birthDate?: string;
+    phoneNumber?: string;
+    isFromRegister?: boolean;
   };
-
   SimpleAuthLoading: {
     authData: any;
-    userName: string;
-    birthDate: string;
-    phoneNumber: string;
   };
-
   SimpleAuthSuccess: {
     authData: any;
-    userName: string;
-    birthDate: string;
-    phoneNumber: string;
   };
-
   UserInfo: {
     authData: any;
-    userName: string;
-    birthDate: string;
-    phoneNumber: string;
   };
-
   HealthCheckDate: {
     authData: any;
     userInfo: any;
     healthData: any;
   };
-
   DiseaseInfo: {
     authData: any;
     userInfo: any;
     healthData: any;
-    selectedCheckupDate: any;
+    checkupInfo: any;
     diseaseAnalysis: any;
   };
 };
@@ -117,43 +102,99 @@ const Stack = createStackNavigator<RootStackParamList>();
 
 const AppNavigator = () => {
   return (
-    <Stack.Navigator
-      initialRouteName="Onboarding"
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-      <Stack.Screen name="Login" component={LoginScreen} />
+    <Stack.Navigator initialRouteName="Onboarding">
+      <Stack.Screen
+        name="Onboarding"
+        component={OnboardingScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Login"
+        component={LoginScreen}
+        options={{ headerShown: false }}
+      />
       <Stack.Screen
         name="LoginSuccess"
         component={LoginSuccessScreen}
-        options={{ animation: 'fade' }}
+        options={{ headerShown: false }}
       />
-      <Stack.Screen name="Register" component={RegisterScreen} />
-      <Stack.Screen name="FindId" component={FindIdScreen} />
-      <Stack.Screen name="FindPassword" component={FindPasswordScreen} />
-      <Stack.Screen name="Main" component={HomeScreen} />
-      <Stack.Screen name="PrescriptionHistory" component={PrescriptionHistoryScreen} />
-      <Stack.Screen name="MedicalHistory" component={MedicalHistoryScreen} />
-      <Stack.Screen name="HealthCheckup" component={HealthCheckupScreen} />
-      <Stack.Screen name="EditHealthInfo" component={EditHealthInfoScreen} />
+      <Stack.Screen
+        name="Register"
+        component={RegisterScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="FindId"
+        component={FindIdScreen}
+        options={{ title: '아이디 찾기' }}
+      />
+      <Stack.Screen
+        name="FindPassword"
+        component={FindPasswordScreen}
+        options={{ title: '비밀번호 찾기' }}
+      />
+      <Stack.Screen
+        name="Main"
+        component={HomeScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="PrescriptionHistory"
+        component={PrescriptionHistoryScreen}
+        options={{ title: '약물 처방 내역' }}
+      />
+      <Stack.Screen
+        name="MedicalHistory"
+        component={MedicalHistoryScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AddMedicalHistory"
+        component={AddMedicalHistoryScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="HealthCheckup"
+        component={HealthCheckupScreen}
+        options={{ title: '건강검진 내역 조회' }}
+      />
+      <Stack.Screen
+        name="EditHealthInfo"
+        component={EditHealthInfoScreen}
+        options={{ title: '건강정보 수정' }}
+      />
 
-      {/* 간편인증 관련 화면들 추가 */}
-      <Stack.Screen name="SimpleAuth" component={SimpleAuthScreen} />
+      {/* 간편인증 관련 화면들 */}
+      <Stack.Screen
+        name="SimpleAuth"
+        component={SimpleAuthScreen}
+        options={{ headerShown: false }}
+      />
       <Stack.Screen
         name="SimpleAuthLoading"
         component={SimpleAuthLoadingScreen}
-        options={{ animation: 'fade' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="SimpleAuthSuccess"
         component={SimpleAuthSuccessScreen}
-        options={{ animation: 'fade' }}
+        options={{ headerShown: false }}
       />
-      <Stack.Screen name="UserInfo" component={UserInfoScreen} />
-      <Stack.Screen name="HealthCheckDate" component={HealthCheckDateScreen} />
-      <Stack.Screen name="DiseaseInfo" component={DiseaseInfoScreen} />
+      <Stack.Screen
+        name="UserInfo"
+        component={UserInfoScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="HealthCheckDate"
+        component={HealthCheckDateScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="DiseaseInfo"
+        component={DiseaseInfoScreen}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 };
@@ -166,8 +207,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   text: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 18,
+    color: '#666',
   },
 });
 
