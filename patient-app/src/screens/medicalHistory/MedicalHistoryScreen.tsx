@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 // 질병 타입 정의
 interface Disease {
@@ -28,9 +28,12 @@ const MedicalHistoryScreen = () => {
   const [myDiseases, setMyDiseases] = useState<Disease[]>([]);
   const [selectedDisease, setSelectedDisease] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadMedicalHistory();
-  }, []);
+  // 화면이 포커스될 때마다 데이터 로드
+  useFocusEffect(
+    React.useCallback(() => {
+      loadMedicalHistory();
+    }, [])
+  );
 
   // 저장된 병력 데이터 로드
   const loadMedicalHistory = async () => {
