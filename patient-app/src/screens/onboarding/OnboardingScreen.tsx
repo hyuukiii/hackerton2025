@@ -24,7 +24,7 @@ const onboardingData = [
     id: 1,
     iconName: 'user-md',
     iconType: 'fontawesome5',
-    title: '의사에게\n내 병력을 올 전달하지\n않아도 됩니다.',
+    title: '의사에게\n내 병력을 전달하지\n않아도 됩니다.',
   },
   {
     id: 2,

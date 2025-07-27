@@ -13,6 +13,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
+import { formatDateKorean } from '../../utils/dateUtils';
 
 // 질병 카테고리 데이터
 const DISEASE_CATEGORIES = {
@@ -120,7 +121,7 @@ const AddMedicalHistoryScreen = () => {
       <View style={styles.dateContainer}>
         <Text style={styles.dateText}>갱신일자</Text>
         <Text style={styles.dateValue}>
-          {new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').replace('.', '')}
+          {formatDateKorean(new Date())}
         </Text>
       </View>
 
