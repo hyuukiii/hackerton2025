@@ -54,3 +54,9 @@ mysql_data/
 *.tmp
 *.temp
 .cache/
+
+# API Keys and Secrets
+application-local.yml
+application-local.properties
+**/application-local.yml
+**/application-local.properties
