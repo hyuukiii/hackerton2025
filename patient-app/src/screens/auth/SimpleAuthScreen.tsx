@@ -62,11 +62,16 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const authMethods = [
-    { id: 'kakao', name: '카카오인증', icon: 'K', color: '#FEE500', textColor: '#000' },
-    { id: 'naver', name: '네이버인증', icon: 'N', color: '#03C75A', textColor: '#FFF' },
-    { id: 'pass', name: '디지털원패스', icon: '🏛️', color: '#1E3A8A', textColor: '#FFF' },
-  ];
+  // 7개 인증 방법으로 업데이트
+    const authMethods = [
+      { id: 'kakao', name: '카카오', icon: '💬', color: '#FEE500', textColor: '#000' },
+      { id: 'payko', name: '페이코', icon: '💳', color: '#FF1744', textColor: '#FFF' },
+      { id: 'kukmin', name: 'KB국민은행', icon: '🏦', color: '#FFB300', textColor: '#000' },
+      { id: 'samsung', name: '삼성패스', icon: '📱', color: '#1565C0', textColor: '#FFF' },
+      { id: 'pass', name: '통신사패스', icon: '📡', color: '#4527A0', textColor: '#FFF' },
+      { id: 'shinhan', name: '신한', icon: '💎', color: '#0288D1', textColor: '#FFF' },
+      { id: 'naver', name: '네이버', icon: 'N', color: '#03C75A', textColor: '#FFF' },
+    ];
 
   // 회원가입에서 왔을 때 자동으로 정보 설정
   useEffect(() => {
@@ -200,48 +205,72 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
       }
     };
 
-    // ==================== 헬퍼 함수들을 여기에 추가합니다 ====================
+    // ==================== 헬퍼 함수들을 여기에 추가 ====================
 
-    // 인증 방법 이름 가져오기
-      const getAuthMethodName = (method: string) => {
-        switch (method) {
-          case 'kakao':
-            return '카카오 인증';
-          case 'naver':
-            return '네이버 인증';
-          case 'pass':
-            return '디지털원패스';
-          default:
-            return '간편인증';
-        }
-      };
+    // 인증 방법 이름 가져오기 (헬퍼 함수들 업데이트)
+        const getAuthMethodName = (method: string) => {
+          switch (method) {
+            case 'kakao':
+              return '카카오';
+            case 'payko':
+              return '페이코';
+            case 'kukmin':
+              return 'KB국민은행';
+            case 'samsung':
+              return '삼성패스';
+            case 'pass':
+              return '통신사패스';
+            case 'shinhan':
+              return '신한';
+            case 'naver':
+              return '네이버';
+            default:
+              return '간편인증';
+          }
+        };
 
     // 인증 방법 색상 가져오기
       const getAuthMethodColor = (method: string) => {
-        switch (method) {
-          case 'kakao':
-            return '#FEE500';
-          case 'naver':
-            return '#03C75A';
-          case 'pass':
-            return '#1E3A8A';
-          default:
-            return '#667eea';
-        }
+          switch (method) {
+            case 'kakao':
+              return '#FEE500';
+            case 'payko':
+              return '#FF1744';
+            case 'kukmin':
+              return '#FFB300';
+            case 'samsung':
+              return '#1565C0';
+            case 'pass':
+              return '#4527A0';
+            case 'shinhan':
+              return '#0288D1';
+            case 'naver':
+              return '#03C75A';
+            default:
+              return '#667eea';
+          }
       };
 
     // 인증 방법 아이콘 가져오기
       const getAuthMethodIcon = (method: string) => {
-        switch (method) {
-          case 'kakao':
-            return 'K';
-          case 'naver':
-            return 'N';
-          case 'pass':
-            return '🏛️';
-          default:
-            return '🔐';
-        }
+          switch (method) {
+            case 'kakao':
+              return '💬';
+            case 'payko':
+              return '💳';
+            case 'kukmin':
+              return '🏦';
+            case 'samsung':
+              return '📱';
+            case 'pass':
+              return '📡';
+            case 'shinhan':
+              return '💎';
+            case 'naver':
+              return 'N';
+            default:
+              return '🔐';
+          }
       };
 
     // ==================== 헬퍼 함수 끝 ====================
@@ -255,36 +284,38 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
         </TouchableOpacity>
       </View>
 
-      <View style={styles.content}>
-        <Text style={styles.logo}>
-          Care Plus<Text style={styles.plus}>+</Text>
-        </Text>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+              <View style={styles.content}>
+                <Text style={styles.logo}>
+                  Care Plus<Text style={styles.plus}>+</Text>
+                </Text>
 
-        <Text style={styles.title}>
-          사용자의 건강정보를{'\n'}받아올게요!
-        </Text>
+                <Text style={styles.title}>
+                  사용자의 건강정보를{'\n'}받아올게요!
+                </Text>
 
-        <Text style={styles.subtitle}>
-          아래 인증 중 편하신 걸 선택해 주세요
-        </Text>
+                <Text style={styles.subtitle}>
+                  아래 인증 중 편하신 걸 선택해 주세요
+                </Text>
 
-        <View style={styles.authButtons}>
-          {authMethods.map((method) => (
-            <TouchableOpacity
-              key={method.id}
-              style={[styles.authButton, { backgroundColor: method.color }]}
-              onPress={() => handleAuthSelect(method.id)}
-            >
-              <Text style={[styles.authIcon, { color: method.textColor }]}>
-                {method.icon}
-              </Text>
-              <Text style={[styles.authText, { color: method.textColor }]}>
-                {method.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
+                <View style={styles.authButtonsContainer}>
+                  {authMethods.map((method) => (
+                    <TouchableOpacity
+                      key={method.id}
+                      style={[styles.authButton, { backgroundColor: method.color }]}
+                      onPress={() => handleAuthSelect(method.id)}
+                    >
+                      <Text style={[styles.authIcon, { color: method.textColor }]}>
+                        {method.icon}
+                      </Text>
+                      <Text style={[styles.authText, { color: method.textColor }]}>
+                        {method.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+      </ScrollView>
 
       {/* 모달 수정 - 회원가입에서 왔을 때 정보 표시 */}
       <Modal
@@ -407,10 +438,14 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 10,
   },
+  scrollView: {
+      flex: 1,
+  },
   content: {
-    flex: 1,
-    paddingHorizontal: 30,
-    paddingTop: 20,
+      flex: 1,
+      paddingHorizontal: 20,
+      paddingTop: 20,
+      paddingBottom: 40,
   },
   logo: {
     fontSize: 48,
@@ -436,28 +471,37 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 50,
   },
+  authButtonsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        gap: 12,
+  },
   authButtons: {
     gap: 15,
   },
   authButton: {
+    width: '48%', // 2열로 표시
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
-    borderRadius: 15,
+    padding: 16,
+    borderRadius: 12,
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
+    marginBottom: 12,
   },
   authIcon: {
-    fontSize: 24,
-    marginRight: 15,
-    fontWeight: 'bold',
+   fontSize: 20,
+   marginRight: 10,
+   fontWeight: 'bold',
   },
   authText: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '600',
+    flex: 1,
   },
   modalContainer: {
     flex: 1,
