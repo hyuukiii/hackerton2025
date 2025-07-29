@@ -1,9 +1,9 @@
-package com.hackerton.enums;
+package com.hackathon.enums;
 
 public enum AuthMethod {
     PASS("pass", "0", "디지털원패스"),
     KAKAO("kakao", "1", "카카오"),
-    NAVER("naver", "2", "네이버"),
+    NAVER("naver", "2", "네이버");
 
     private final String method;
     private final String privateAuthType;
