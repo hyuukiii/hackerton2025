@@ -1,4 +1,7 @@
 spring:
+  profiles:
+    active: local
+
   application:
     name: healthcare-hackathon
 
@@ -123,12 +126,12 @@ management:
 tilko:
   api:
     host: https://dev.tilko.net
-    key: 49a84c1bcba847f4922da4208540ee65
+    key: ${TILKO_API_KEY:your-tilko-api-key-here}
 
 # gpt api 설정
 chatgpt:
   api:
     url: https://api.openai.com/v1/chat/completions
-    key: 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
+    key: ${CHATGPT_API_KEY:your-chatgpt-api-key-here}
     model: gpt-4o-mini
     max-tokens: 1000
