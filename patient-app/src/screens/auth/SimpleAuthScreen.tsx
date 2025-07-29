@@ -82,15 +82,11 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
 
       // 회원가입에서 왔으면 모달 없이 바로 인증 진행
       if (isFromRegister && userName && birthDate && phoneNumber) {
-        // authMethod를 직접 전달하는 방식으로 수정
-        handleSimpleAuthWithMethod(method);  // 👈 수정된 부분
+        handleSimpleAuth(method);  // 👈 수정된 부분
       } else {
         setModalVisible(true);
       }
   };
-
-
-
 
   const formatBirthDate = (text: string) => {
     const numbers = text.replace(/[^0-9]/g, '');
@@ -114,7 +110,11 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
     }
   };
 
-  const handleSimpleAuth = async () => {
+  // 1. handleSimpleAuth 함수를 수정 (선택적 매개변수 추가)
+  const handleSimpleAuth = async (selectedMethod?: string) => {
+      // selectedMethod가 있으면 사용, 없으면 state의 authMethod 사용
+      const methodToUse = selectedMethod || authMethod;
+
       if (!userName || !birthDate || !phoneNumber) {
         Alert.alert('알림', '모든 정보를 입력해주세요.');
         return;
@@ -136,7 +136,7 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
 
       const fullBirthDate = convertToFullYear(birthNumbers);
       console.log('변환된 생년월일:', fullBirthDate);
-      console.log('선택된 인증 방법:', authMethod);
+      console.log('선택된 인증 방법:', methodToUse);
 
       const phoneNumbers = phoneNumber.replace(/[^0-9]/g, '');
       if (phoneNumbers.length !== 11) {
@@ -154,7 +154,7 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
           userName,
           birthDate: fullBirthDate,
           userCellphoneNumber: phoneNumbers,
-          authMethod: authMethod,  // 👈 인증 방법 추가
+          authMethod: methodToUse,  // 👈 인증 방법 변경
         });
 
         console.log('간편인증 응답:', authResponse);
@@ -165,12 +165,12 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
 
         console.log('간편인증 성공:', authResponse);
 
-        // 인증 정보 저장 (authMethod 포함)
+        // 인증 정보 저장
         await AsyncStorage.setItem('authData', JSON.stringify(authResponse));
         await AsyncStorage.setItem('registerData', JSON.stringify({
           userId,
           password,
-          authMethod,  // 👈 인증 방법 저장
+          authMethod: methodToUse,  // 👈 인증 방법 저장 변경
           userName,
           birthDate: birthNumbers,
           phoneNumber: phoneNumbers,
@@ -368,9 +368,11 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
               />
             </View>
 
+
+            {/* 3. 모달의 인증하기 버튼은 그대로 유지 (매개변수 없이 호출) */}
             <TouchableOpacity
               style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-              onPress={handleSimpleAuth}
+              onPress={() => handleSimpleAuth()}  // 매개변수 없이 호출하면 state의 authMethod 사용
               disabled={loading}
             >
               {loading ?
