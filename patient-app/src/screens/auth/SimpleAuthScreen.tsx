@@ -1,4 +1,22 @@
 // src/screens/auth/SimpleAuthScreen.tsx
+/*
+
+SimpleAuthScreen 컴포넌트
+├── import 문들
+├── interface 정의
+├── 컴포넌트 시작
+├── state 선언들
+├── useEffect
+├── handleAuthSelect 함수
+├── formatBirthDate 함수
+├── formatPhoneNumber 함수
+├── handleSimpleAuth 함수
+├──
+├── 👉 여기에 헬퍼 함수들 추가! (return 문 바로 위)
+├──
+└── return (JSX)
+
+*/
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -93,88 +111,137 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
   };
 
   const handleSimpleAuth = async () => {
-    if (!userName || !birthDate || !phoneNumber) {
-      Alert.alert('알림', '모든 정보를 입력해주세요.');
-      return;
-    }
+      if (!userName || !birthDate || !phoneNumber) {
+        Alert.alert('알림', '모든 정보를 입력해주세요.');
+        return;
+      }
 
-    const birthNumbers = birthDate.replace(/[^0-9]/g, '');
-    if (birthNumbers.length !== 6) {
-      Alert.alert('알림', '생년월일을 올바르게 입력해주세요. (예: 00.01.01)');
-      return;
-    }
+      const birthNumbers = birthDate.replace(/[^0-9]/g, '');
+      if (birthNumbers.length !== 6) {
+        Alert.alert('알림', '생년월일을 올바르게 입력해주세요. (예: 00.01.01)');
+        return;
+      }
 
-    // 6자리 생년월일을 8자리로 변환 (YYMMDD -> YYYYMMDD)
-    const convertToFullYear = (yymmdd: string) => {
-      const yy = parseInt(yymmdd.substring(0, 2));
-      const century = yy > 50 ? 1900 : 2000;
-      const fullYear = century + yy;
-      return fullYear + yymmdd.substring(2);
+      // 6자리 생년월일을 8자리로 변환 (YYMMDD -> YYYYMMDD)
+      const convertToFullYear = (yymmdd: string) => {
+        const yy = parseInt(yymmdd.substring(0, 2));
+        const century = yy > 50 ? 1900 : 2000;
+        const fullYear = century + yy;
+        return fullYear + yymmdd.substring(2);
+      };
+
+      const fullBirthDate = convertToFullYear(birthNumbers);
+      console.log('변환된 생년월일:', fullBirthDate);
+      console.log('선택된 인증 방법:', authMethod);
+
+      const phoneNumbers = phoneNumber.replace(/[^0-9]/g, '');
+      if (phoneNumbers.length !== 11) {
+        Alert.alert('알림', '휴대폰 번호를 올바르게 입력해주세요.');
+        return;
+      }
+
+      setLoading(true);
+      setModalVisible(false);
+
+      try {
+        // 백엔드 간편인증 요청 API 호출 - authMethod 추가
+        console.log('간편인증 요청 시작');
+        const authResponse = await api.post('/auth/request', {
+          userName,
+          birthDate: fullBirthDate,
+          userCellphoneNumber: phoneNumbers,
+          authMethod: authMethod,  // 👈 인증 방법 추가
+        });
+
+        console.log('간편인증 응답:', authResponse);
+
+        if (!authResponse) {
+          throw new Error('간편인증 요청 실패');
+        }
+
+        console.log('간편인증 성공:', authResponse);
+
+        // 인증 정보 저장 (authMethod 포함)
+        await AsyncStorage.setItem('authData', JSON.stringify(authResponse));
+        await AsyncStorage.setItem('registerData', JSON.stringify({
+          userId,
+          password,
+          authMethod,  // 👈 인증 방법 저장
+          userName,
+          birthDate: birthNumbers,
+          phoneNumber: phoneNumbers,
+        }));
+
+        // 인증 완료 후 건강정보 조회 화면으로 이동
+        navigation.navigate('SimpleAuthLoading', {
+          authData: authResponse,
+          userName,
+          birthDate: birthNumbers,
+          phoneNumber: phoneNumbers,
+        });
+
+      } catch (error: any) {
+        console.error('간편인증 오류:', error);
+
+        let errorMessage = '간편인증 요청 중 오류가 발생했습니다.';
+        if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
+        Alert.alert('인증 실패', errorMessage);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const fullBirthDate = convertToFullYear(birthNumbers);
-    console.log('변환된 생년월일:', fullBirthDate);
+    // ==================== 헬퍼 함수들을 여기에 추가합니다 ====================
 
-    const phoneNumbers = phoneNumber.replace(/[^0-9]/g, '');
-    if (phoneNumbers.length !== 11) {
-      Alert.alert('알림', '휴대폰 번호를 올바르게 입력해주세요.');
-      return;
-    }
+    // 인증 방법 이름 가져오기
+      const getAuthMethodName = (method: string) => {
+        switch (method) {
+          case 'kakao':
+            return '카카오 인증';
+          case 'naver':
+            return '네이버 인증';
+          case 'pass':
+            return '디지털원패스';
+          default:
+            return '간편인증';
+        }
+      };
 
-    setLoading(true);
-    setModalVisible(false);
+    // 인증 방법 색상 가져오기
+      const getAuthMethodColor = (method: string) => {
+        switch (method) {
+          case 'kakao':
+            return '#FEE500';
+          case 'naver':
+            return '#03C75A';
+          case 'pass':
+            return '#1E3A8A';
+          default:
+            return '#667eea';
+        }
+      };
 
-    try {
-      // 백엔드 간편인증 요청 API 호출
-      console.log('간편인증 요청 시작');
-      const authResponse = await api.post('/auth/request', {
-        userName,
-        birthDate: fullBirthDate, // 8자리로 변환된 생년월일 사용
-        userCellphoneNumber: phoneNumbers,
-      });
+    // 인증 방법 아이콘 가져오기
+      const getAuthMethodIcon = (method: string) => {
+        switch (method) {
+          case 'kakao':
+            return 'K';
+          case 'naver':
+            return 'N';
+          case 'pass':
+            return '🏛️';
+          default:
+            return '🔐';
+        }
+      };
 
-      console.log('간편인증 응답:', authResponse);
+    // ==================== 헬퍼 함수 끝 ====================
 
-      if (!authResponse) {
-        throw new Error('간편인증 요청 실패');
-      }
-
-      console.log('간편인증 성공:', authResponse);
-
-      // 인증 정보 저장
-      await AsyncStorage.setItem('authData', JSON.stringify(authResponse));
-      await AsyncStorage.setItem('registerData', JSON.stringify({
-        userId,
-        password,
-        authMethod,
-        userName,
-        birthDate: birthNumbers,
-        phoneNumber: phoneNumbers,
-      }));
-
-      // 인증 완료 후 건강정보 조회 화면으로 이동
-      navigation.navigate('SimpleAuthLoading', {
-        authData: authResponse,
-        userName,
-        birthDate: birthNumbers,
-        phoneNumber: phoneNumbers,
-      });
-
-    } catch (error: any) {
-      console.error('간편인증 오류:', error);
-
-      let errorMessage = '간편인증 요청 중 오류가 발생했습니다.';
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
-      Alert.alert('인증 실패', errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -239,9 +306,23 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
             <Text style={styles.modalSubtitle}>
               {isFromRegister
                 ? '회원가입 시 입력하신 정보로 인증을 진행합니다.\n정보가 올바른지 확인해주세요.'
-                : `${authMethod === 'kakao' && '카카오'}${authMethod === 'naver' && '네이버'}${authMethod === 'pass' && '디지털원패스'} 인증을 위해 아래 정보를 입력해주세요`
+                : `${getAuthMethodName(authMethod)}을 위해 아래 정보를 입력해주세요`
               }
             </Text>
+
+            {/* 선택한 인증 방법 표시 */}
+            {authMethod && (
+               <View style={styles.authMethodIndicator}>
+                 <View style={[
+                   styles.authMethodBadge,
+                   { backgroundColor: getAuthMethodColor(authMethod) }
+                 ]}>
+                 <Text style={styles.authMethodBadgeText}>
+                   {getAuthMethodIcon(authMethod)} {getAuthMethodName(authMethod)}
+                   </Text>
+                 </View>
+               </View>
+            )}
 
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>이름</Text>
@@ -453,6 +534,20 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     marginTop: 16,
   },
+  authMethodIndicator: {
+      alignItems: 'center',
+      marginVertical: 15,
+    },
+    authMethodBadge: {
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      borderRadius: 20,
+    },
+    authMethodBadgeText: {
+      color: '#fff',
+      fontWeight: 'bold',
+      fontSize: 16,
+    },
 });
 
 export default SimpleAuthScreen;

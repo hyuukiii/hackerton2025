@@ -16,4 +16,5 @@ public class AuthResponseDto {
     private String userName;
     private String birthDate;
     private String userCellphoneNumber;
+    private String authMethod; // 어떤 방법으로 사용자가 인증 했는지 ex: kakao, naver, onepass
 }

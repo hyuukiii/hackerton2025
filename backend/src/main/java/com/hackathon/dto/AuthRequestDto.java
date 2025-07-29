@@ -11,4 +11,5 @@ public class AuthRequestDto {
     private String userName;
     private String birthDate;
     private String userCellphoneNumber;
+    private String authMethod;
 }

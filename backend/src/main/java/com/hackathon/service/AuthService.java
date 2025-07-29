@@ -122,7 +122,7 @@ public class AuthService {
         return responseDto;
     }
 
-    // 간편인증 요청 처리 - 필터링된 DTO 반환
+    // 간편인증 요청 처리 - 인증 방법별 처리 추가
     public AuthResponseDto requestSimpleAuth(AuthRequestDto authRequest) throws Exception {
         // RSA Public Key 조회
         String rsaPublicKey = getPublicKey();
@@ -131,7 +131,8 @@ public class AuthService {
         byte[] aesKey = new byte[16];
         new Random().nextBytes(aesKey);
 
-        byte[] aesIv = new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+        byte[] aesIv = new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
         // AES Key를 RSA Public Key로 암호화
         String aesCipherKey = rsaEncrypt(rsaPublicKey, aesKey);
@@ -139,14 +140,19 @@ public class AuthService {
         // API URL 설정
         String url = apiHost + "/api/v1.0/nhissimpleauth/simpleauthrequest";
 
+        // 인증 방법에 따른 PrivateAuthType 설정
+        String privateAuthType = getPrivateAuthType(authRequest.getAuthMethod());
+
         // API 요청 파라미터 설정
         JSONObject json = new JSONObject();
-        json.put("PrivateAuthType", "0");
+        json.put("PrivateAuthType", privateAuthType);
         json.put("UserName", aesEncrypt(aesKey, aesIv, authRequest.getUserName()));
         json.put("BirthDate", aesEncrypt(aesKey, aesIv, authRequest.getBirthDate()));
         json.put("UserCellphoneNumber", aesEncrypt(aesKey, aesIv, authRequest.getUserCellphoneNumber()));
 
         System.out.println("간편인증 요청 URL: " + url);
+        System.out.println("인증 방법: " + authRequest.getAuthMethod());
+        System.out.println("PrivateAuthType: " + privateAuthType);
         System.out.println("간편인증 요청 데이터: " + json.toJSONString());
 
         // API 호출
@@ -175,11 +181,38 @@ public class AuthService {
             System.out.println(responseStr);
 
             // JSON 응답을 DTO로 변환
-            return parseAuthResponse(responseStr);
+            AuthResponseDto responseDto = parseAuthResponse(responseStr);
+
+            // 인증 방법 정보 추가
+            responseDto.setAuthMethod(authRequest.getAuthMethod());
+
+            return responseDto;
         }
     }
 
-    // 간편인증 요청 처리 - 원본 JSON 반환 (Raw) - 이 메서드가 누락되어 있었습니다!
+    // 인증 방법에 따른 PrivateAuthType 매핑
+    private String getPrivateAuthType(String authMethod) {
+        if (authMethod == null) {
+            return "0"; // 기본값
+        }
+
+        switch (authMethod.toLowerCase()) {
+            case "kakao":
+                return "1";  // 카카오 인증
+            case "naver":
+                return "2";  // 네이버 인증
+            case "pass":
+                return "0";  // 디지털원패스 (PASS)
+            default:
+                System.out.println("알 수 없는 인증 방법: " + authMethod + ", 기본값 사용");
+                return "0";
+        }
+
+        // 실제 Tilko API의 PrivateAuthType 값은 API 문서를 확인하세요
+        // 현재는 예시 값입니다
+    }
+
+    // 간편인증 요청 처리 - 원본 JSON 반환 (Raw)
     public Object requestSimpleAuthRaw(AuthRequestDto authRequest) throws Exception {
         // RSA Public Key 조회
         String rsaPublicKey = getPublicKey();
