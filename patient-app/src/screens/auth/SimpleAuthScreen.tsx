@@ -78,14 +78,102 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
   }, [isFromRegister, registerUserName, registerBirthDate, registerPhoneNumber]);
 
   const handleAuthSelect = (method: string) => {
-    setAuthMethod(method);
+      setAuthMethod(method);
 
-    // 회원가입에서 왔으면 모달 없이 바로 인증 진행
-    if (isFromRegister && userName && birthDate && phoneNumber) {
-      handleSimpleAuth();
-    } else {
-      setModalVisible(true);
-    }
+      // 회원가입에서 왔으면 모달 없이 바로 인증 진행
+      if (isFromRegister && userName && birthDate && phoneNumber) {
+        // authMethod를 직접 전달하는 방식으로 수정
+        handleSimpleAuthWithMethod(method);  // 👈 수정된 부분
+      } else {
+        setModalVisible(true);
+      }
+  };
+
+  // 기존 handleSimpleAuth는 그대로 두고, 새 함수 추가
+  const handleSimpleAuthWithMethod = async (selectedMethod: string) => {
+      if (!userName || !birthDate || !phoneNumber) {
+        Alert.alert('알림', '모든 정보를 입력해주세요.');
+        return;
+      }
+
+      const birthNumbers = birthDate.replace(/[^0-9]/g, '');
+      if (birthNumbers.length !== 6) {
+        Alert.alert('알림', '생년월일을 올바르게 입력해주세요. (예: 00.01.01)');
+        return;
+      }
+
+      // 6자리 생년월일을 8자리로 변환 (YYMMDD -> YYYYMMDD)
+      const convertToFullYear = (yymmdd: string) => {
+        const yy = parseInt(yymmdd.substring(0, 2));
+        const century = yy > 50 ? 1900 : 2000;
+        const fullYear = century + yy;
+        return fullYear + yymmdd.substring(2);
+      };
+
+      const fullBirthDate = convertToFullYear(birthNumbers);
+      console.log('변환된 생년월일:', fullBirthDate);
+      console.log('선택된 인증 방법:', selectedMethod);  // 👈 매개변수 사용
+
+      const phoneNumbers = phoneNumber.replace(/[^0-9]/g, '');
+      if (phoneNumbers.length !== 11) {
+        Alert.alert('알림', '휴대폰 번호를 올바르게 입력해주세요.');
+        return;
+      }
+
+      setLoading(true);
+      setModalVisible(false);
+
+      try {
+        // 백엔드 간편인증 요청 API 호출
+        console.log('간편인증 요청 시작');
+        const authResponse = await api.post('/auth/request', {
+          userName,
+          birthDate: fullBirthDate,
+          userCellphoneNumber: phoneNumbers,
+          authMethod: selectedMethod,  // 👈 매개변수 사용
+        });
+
+        console.log('간편인증 응답:', authResponse);
+
+        if (!authResponse) {
+          throw new Error('간편인증 요청 실패');
+        }
+
+        console.log('간편인증 성공:', authResponse);
+
+        // 인증 정보 저장
+        await AsyncStorage.setItem('authData', JSON.stringify(authResponse));
+        await AsyncStorage.setItem('registerData', JSON.stringify({
+          userId,
+          password,
+          authMethod: selectedMethod,  // 👈 매개변수 사용
+          userName,
+          birthDate: birthNumbers,
+          phoneNumber: phoneNumbers,
+        }));
+
+        // 인증 완료 후 건강정보 조회 화면으로 이동
+        navigation.navigate('SimpleAuthLoading', {
+          authData: authResponse,
+          userName,
+          birthDate: birthNumbers,
+          phoneNumber: phoneNumbers,
+        });
+
+      } catch (error: any) {
+        console.error('간편인증 오류:', error);
+
+        let errorMessage = '간편인증 요청 중 오류가 발생했습니다.';
+        if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
+        Alert.alert('인증 실패', errorMessage);
+      } finally {
+        setLoading(false);
+      }
   };
 
   const formatBirthDate = (text: string) => {

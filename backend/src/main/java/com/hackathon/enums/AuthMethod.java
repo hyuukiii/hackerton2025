@@ -1,8 +1,8 @@
 package com.hackathon.enums;
 
 public enum AuthMethod {
-    PASS("pass", "0", "디지털원패스"),
-    KAKAO("kakao", "1", "카카오"),
+    KAKAO("kakao", "0", "카카오"),
+    PASS("pass", "1", "디지털원패스"),
     NAVER("naver", "2", "네이버");
 
     private final String method;
