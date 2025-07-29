@@ -190,26 +190,20 @@ public class AuthService {
         }
     }
 
-    // 인증 방법에 따른 PrivateAuthType 매핑
+    // getPrivateAuthType 메서드를 다음과 같이 수정
     private String getPrivateAuthType(String authMethod) {
-        if (authMethod == null) {
-            return "0"; // 기본값
-        }
+        try {
+            AuthMethod auth = AuthMethod.fromMethod(authMethod);
 
-        switch (authMethod.toLowerCase()) {
-            case "kakao":
-                return "1";  // 카카오 인증
-            case "naver":
-                return "2";  // 네이버 인증
-            case "pass":
-                return "0";  // 디지털원패스 (PASS)
-            default:
-                System.out.println("알 수 없는 인증 방법: " + authMethod + ", 기본값 사용");
-                return "0";
-        }
+            System.out.println("인증 방법 매핑 - 입력: " + authMethod +
+                    ", 출력: " + auth.getPrivateAuthType() +
+                    " (" + auth.getDescription() + ")");
 
-        // 실제 Tilko API의 PrivateAuthType 값은 API 문서를 확인하세요
-        // 현재는 예시 값입니다
+            return auth.getPrivateAuthType();
+        } catch (IllegalArgumentException e) {
+            System.err.println("알 수 없는 인증 방법: " + authMethod + ", 기본값(PASS) 사용");
+            return AuthMethod.PASS.getPrivateAuthType();
+        }
     }
 
     // 간편인증 요청 처리 - 원본 JSON 반환 (Raw)
