@@ -3,7 +3,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-// API URL 설정  할리스 난곡점: 172.30.1.33, 서울대 시흥 캠퍼스: 10.10.180.66
+// API URL 설정  할리스 난곡점: 172.30.1.33, 서울대 시흥 캠퍼스: 10.10.180.66, 현기 핫스팟: 192.0.0.2
 const getApiUrl = () => {
 if (__DEV__) {
     // 개발 환경
@@ -12,7 +12,7 @@ if (__DEV__) {
       return 'http://10.0.2.2:8082/api';
     } else {
       // iOS 시뮬레이터나 실제 디바이스는 컴퓨터의 IP 주소 사용
-      return 'http://172.30.1.33:8082/api';
+      return 'http://192.0.0.2:8082/api';
     }
   } else {
     // 프로덕션 환경
