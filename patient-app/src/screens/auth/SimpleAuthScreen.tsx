@@ -188,6 +188,7 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
           userName,
           birthDate: birthNumbers,
           phoneNumber: phoneNumbers,
+          authMethod: methodToUse,
         });
 
       } catch (error: any) {

@@ -21,6 +21,7 @@ interface SimpleAuthLoadingScreenProps {
       userName: string;
       birthDate: string;
       phoneNumber: string;
+      authMethod: string;
     };
   };
 }
@@ -29,11 +30,91 @@ const SimpleAuthLoadingScreen: React.FC<SimpleAuthLoadingScreenProps> = ({
   navigation,
   route
 }) => {
-  const { authData, userName, birthDate, phoneNumber } = route.params;
-  const [status, setStatus] = useState('카카오톡 지갑에서 인증을 진행해주세요');
+  const { authData, userName, birthDate, phoneNumber, authMethod } = route.params;
+  const [status, setStatus] = useState('간편인증을 진행해주세요');
   const [progress, setProgress] = useState(0);
   const [isWaitingForAuth, setIsWaitingForAuth] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+
+  // 인증 방법별 정보 가져오기
+     const getAuthInfo = (method: string) => {
+        switch (method) {
+          case 'kakao':
+            return {
+              name: '카카오톡',
+              icon: '💬',
+              color: '#FEE500',
+              textColor: '#000',
+              description: '카카오톡 지갑에서',
+              subDescription: '카카오톡 앱을 열고 지갑에서',
+            };
+          case 'payko':
+            return {
+              name: '페이코',
+              icon: '💳',
+              color: '#FF1744',
+              textColor: '#FFF',
+              description: '페이코 앱에서',
+              subDescription: '페이코 앱을 열고 인증 알림에서',
+            };
+          case 'kukmin':
+            return {
+              name: 'KB국민은행',
+              icon: '🏦',
+              color: '#FFB300',
+              textColor: '#000',
+              description: 'KB스타뱅킹에서',
+              subDescription: 'KB스타뱅킹 앱을 열고 인증센터에서',
+            };
+          case 'samsung':
+            return {
+              name: '삼성패스',
+              icon: '📱',
+              color: '#1565C0',
+              textColor: '#FFF',
+              description: '삼성패스에서',
+              subDescription: '삼성패스 앱을 열고 인증 요청에서',
+            };
+          case 'pass':
+            return {
+              name: '통신사패스',
+              icon: '📡',
+              color: '#4527A0',
+              textColor: '#FFF',
+              description: 'PASS 앱에서',
+              subDescription: 'PASS 앱을 열고 인증 알림에서',
+            };
+          case 'shinhan':
+            return {
+              name: '신한',
+              icon: '💎',
+              color: '#0288D1',
+              textColor: '#FFF',
+              description: '신한SOL에서',
+              subDescription: '신한SOL 앱을 열고 인증센터에서',
+            };
+          case 'naver':
+            return {
+              name: '네이버',
+              icon: 'N',
+              color: '#03C75A',
+              textColor: '#FFF',
+              description: '네이버 앱에서',
+              subDescription: '네이버 앱을 열고 인증 알림에서',
+            };
+          default:
+            return {
+              name: '간편인증',
+              icon: '🔐',
+              color: '#667eea',
+              textColor: '#FFF',
+              description: '인증 앱에서',
+              subDescription: '인증 앱을 열고',
+            };
+        }
+      };
+
+  const authInfo = getAuthInfo(authMethod);
 
   const fetchHealthData = async () => {
     try {
@@ -247,60 +328,62 @@ const SimpleAuthLoadingScreen: React.FC<SimpleAuthLoadingScreenProps> = ({
   };
 
   // 인증 대기 화면
-  if (isWaitingForAuth && !isLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.content}>
-          <Text style={styles.logo}>
-            Care Plus<Text style={styles.plus}>+</Text>
-          </Text>
+  // 인증 대기 화면
+    if (isWaitingForAuth && !isLoading) {
+      return (
+        <SafeAreaView style={[styles.container, { backgroundColor: authInfo.color }]}>
+          <View style={styles.content}>
+            <Text style={[styles.logo, { color: authInfo.textColor }]}>
+              Care Plus<Text style={[styles.plus, { color: authInfo.textColor, opacity: 0.7 }]}>+</Text>
+            </Text>
 
-          <View style={styles.authWaitingContainer}>
-            <View style={styles.kakaoIconContainer}>
-              <Text style={styles.kakaoIcon}>💬</Text>
+            <View style={styles.authWaitingContainer}>
+              <View style={[styles.authIconContainer, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}>
+                <Text style={styles.authIcon}>{authInfo.icon}</Text>
+              </View>
+
+              <Text style={[styles.waitingTitle, { color: authInfo.textColor }]}>
+                {authInfo.description}{'\n'}인증을 진행해주세요
+              </Text>
+
+              <Text style={[styles.waitingSubText, { color: authInfo.textColor, opacity: 0.8 }]}>
+                {authInfo.subDescription}{'\n'}간편인증을 완료해주세요
+              </Text>
+
+              <TouchableOpacity
+                style={[styles.completeButton, { backgroundColor: authInfo.textColor === '#FFF' ? '#FFF' : 'rgba(0,0,0,0.1)' }]}
+                onPress={() => {
+                  setIsWaitingForAuth(false);
+                  fetchHealthData();
+                }}
+              >
+                <Text style={[styles.completeButtonText, { color: authInfo.color }]}>
+                  인증을 완료했습니다
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => navigation.goBack()}
+              >
+                <Text style={[styles.cancelButtonText, { color: authInfo.textColor, opacity: 0.8 }]}>
+                  취소
+                </Text>
+              </TouchableOpacity>
             </View>
 
-            <Text style={styles.waitingTitle}>
-              카카오톡 지갑에서{'\n'}인증을 진행해주세요
+            <Text style={[styles.notice, { color: authInfo.textColor, opacity: 0.6 }]}>
+              ※ 2분 이내에 인증을 완료해주세요
             </Text>
-
-            <Text style={styles.waitingSubText}>
-              카카오톡 앱을 열고 지갑에서{'\n'}간편인증을 완료해주세요
-            </Text>
-
-            <TouchableOpacity
-              style={styles.completeButton}
-              onPress={() => {
-                setIsWaitingForAuth(false);
-                fetchHealthData();
-              }}
-            >
-              <Text style={styles.completeButtonText}>
-                인증을 완료했습니다
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => navigation.goBack()}
-            >
-              <Text style={styles.cancelButtonText}>
-                취소
-              </Text>
-            </TouchableOpacity>
           </View>
+        </SafeAreaView>
+      );
+    }
 
-          <Text style={styles.notice}>
-            ※ 2분 이내에 인증을 완료해주세요
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   // 건강정보 조회 중 화면
   return (
-    <SafeAreaView style={styles.container}>
+     <SafeAreaView style={[styles.container, { backgroundColor: authInfo.color }]}>
       <View style={styles.content}>
         <Text style={styles.logo}>
           Care Plus<Text style={styles.plus}>+</Text>
