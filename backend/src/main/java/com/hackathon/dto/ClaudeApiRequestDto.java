@@ -10,16 +10,19 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ChatGptApiRequestDto {
+public class ClaudeApiRequestDto {
     private String model;
-    
+
     @JsonProperty("max_tokens")
     private int maxTokens;
-    
-    private double temperature = 0.7;
-    
+
+    private double temperature = 0.3;
+
     private List<Message> messages;
-    
+
+    @JsonProperty("anthropic_version")
+    private String anthropicVersion = "2023-06-01";
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

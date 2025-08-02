@@ -30,8 +30,13 @@ public class IntegratedHealthService {
     @Value("${tilko.api.key}")
     private String apiKey;
 
+    //@Autowired
+    //private ChatGptAiService chatGptAiService;
+
+    // ChatGptAiService 대신 ClaudeAiService 사용
     @Autowired
-    private ChatGptAiService chatGptAiService;
+    private ClaudeAiService claudeAiService;
+
 
     // 통합 건강 정보 조회
     public IntegratedHealthDataDto getIntegratedHealthData(AuthResponseDto authData) throws Exception {
@@ -357,7 +362,34 @@ public class IntegratedHealthService {
         }
     }
 
-    // 기저질환 분석 (ChatGPT AI 활용)
+    // 기저질환 분석 메소드 수정
+    public DiseaseAnalysisDto analyzeDiseases(Object medicationData) {
+        try {
+            System.out.println("=== 기저질환 분석 시작 (Claude AI) ===");
+
+            // Claude AI 서비스를 통해 기저질환 분석
+            DiseaseAnalysisDto analysisResult = claudeAiService.analyzePrescriptionForDiseases(medicationData);
+
+            System.out.println("Claude AI 분석 완료: " + analysisResult.getStatus());
+
+            return analysisResult;
+
+        } catch (Exception e) {
+            System.err.println("기저질환 분석 중 오류 발생: " + e.getMessage());
+            e.printStackTrace();
+
+            DiseaseAnalysisDto errorResponse = new DiseaseAnalysisDto();
+            errorResponse.setStatus("ERROR");
+            errorResponse.setMessage("기저질환 분석 중 오류가 발생했습니다: " + e.getMessage());
+            errorResponse.setPredictedDiseases(new java.util.ArrayList<>());
+            errorResponse.setRiskLevel("UNKNOWN");
+
+            return errorResponse;
+        }
+    }
+}
+
+    /* 기저질환 분석 (ChatGPT AI 활용)
     public DiseaseAnalysisDto analyzeDiseases(Object medicationData) {
         try {
             System.out.println("=== 기저질환 분석 시작 (ChatGPT AI) ===");
@@ -383,4 +415,4 @@ public class IntegratedHealthService {
             return errorResponse;
         }
     }
-}
+    */

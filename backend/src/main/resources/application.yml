@@ -128,10 +128,18 @@ tilko:
     host: https://dev.tilko.net
     key: ${TILKO_API_KEY:your-tilko-api-key-here}
 
-# gpt api 설정
-chatgpt:
+# 모델명 :claude-3-sonnet-20240229
+claude:
   api:
-    url: https://api.openai.com/v1/chat/completions
-    key: ${CHATGPT_API_KEY:your-chatgpt-api-key-here}
-    model: gpt-4o-mini
+    url: https://api.anthropic.com/v1/messages
+    key: ${CLAUDE_API_KEY:your-claude-api-key-here}
+    model: claude-3-sonnet-20240229
     max-tokens: 1000
+
+# gpt api 설정
+#chatgpt:
+#  api:
+#    url: https://api.openai.com/v1/chat/completions
+#    key: ${CHATGPT_API_KEY:your-chatgpt-api-key-here}
+#    model: gpt-4o-mini
+#    max-tokens: 1000
