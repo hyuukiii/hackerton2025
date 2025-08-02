@@ -188,7 +188,7 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
           userName,
           birthDate: birthNumbers,
           phoneNumber: phoneNumbers,
-          authMethod: methodToUse,
+          authMethod: methodToUse, // 선택한 인증 방법 (예: 'KAKAO', 'NAVER', 등)
         });
 
       } catch (error: any) {

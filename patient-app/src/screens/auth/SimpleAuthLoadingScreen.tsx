@@ -30,7 +30,15 @@ const SimpleAuthLoadingScreen: React.FC<SimpleAuthLoadingScreenProps> = ({
   navigation,
   route
 }) => {
+    // SimpleAuthScreen에서의 Navgation의 지정한 변수를 불러오기 (구조 분해 할당 하기)
+    // Navigation.navigation()로 전달한 파라미터가 route.params 객체에 담겨서 다음 화면으로 전달
   const { authData, userName, birthDate, phoneNumber, authMethod } = route.params;
+
+  /*💡방법 2.개별할당 방법
+        * const authData = route.params.authData;
+        * const userName = route.params.userName;
+    */
+
   const [status, setStatus] = useState('간편인증을 진행해주세요');
   const [progress, setProgress] = useState(0);
   const [isWaitingForAuth, setIsWaitingForAuth] = useState(true);
@@ -327,8 +335,7 @@ const SimpleAuthLoadingScreen: React.FC<SimpleAuthLoadingScreenProps> = ({
     return '신부전';
   };
 
-  // 인증 대기 화면
-  // 인증 대기 화면
+    // 인증 대기 화면
     if (isWaitingForAuth && !isLoading) {
       return (
         <SafeAreaView style={[styles.container, { backgroundColor: authInfo.color }]}>
@@ -350,28 +357,58 @@ const SimpleAuthLoadingScreen: React.FC<SimpleAuthLoadingScreenProps> = ({
                 {authInfo.subDescription}{'\n'}간편인증을 완료해주세요
               </Text>
 
-              <TouchableOpacity
-                style={[styles.completeButton, { backgroundColor: authInfo.textColor === '#FFF' ? '#FFF' : 'rgba(0,0,0,0.1)' }]}
+            <TouchableOpacity
+                style={[
+                    styles.completeButton,
+                    {
+                      backgroundColor: authInfo.textColor === '#FFF' ? '#FFF' : '#FFF',  // 항상 흰색 배경
+                      borderWidth: 2,
+                      borderColor: authInfo.textColor === '#FFF' ? 'rgba(255,255,255,0.3)' : authInfo.color,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 4,
+                      elevation: 3,
+                    }
+                ]}
                 onPress={() => {
                   setIsWaitingForAuth(false);
                   fetchHealthData();
                 }}
               >
-                <Text style={[styles.completeButtonText, { color: authInfo.color }]}>
-                  인증을 완료했습니다
-                </Text>
-              </TouchableOpacity>
+                <Text style={[
+                styles.completeButtonText,
+                {
+                  color: authInfo.textColor === '#FFF' ? authInfo.color : '#333'  // 어두운 텍스트
+                  }
+              ]}>
+               인증을 완료했습니다
+              </Text>
+            </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.cancelButton}
+                style={[
+                  styles.cancelButton,
+                  {
+                    borderWidth: 1,
+                    borderColor: authInfo.textColor === '#FFF' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.2)',
+                    borderRadius: 12,
+                    backgroundColor: 'transparent',
+                  }
+                ]}
                 onPress={() => navigation.goBack()}
               >
-                <Text style={[styles.cancelButtonText, { color: authInfo.textColor, opacity: 0.8 }]}>
+                <Text style={[
+                  styles.cancelButtonText,
+                  {
+                    color: authInfo.textColor,
+                    fontWeight: '500',
+                  }
+                ]}>
                   취소
                 </Text>
               </TouchableOpacity>
             </View>
-
             <Text style={[styles.notice, { color: authInfo.textColor, opacity: 0.6 }]}>
               ※ 2분 이내에 인증을 완료해주세요
             </Text>
@@ -383,40 +420,41 @@ const SimpleAuthLoadingScreen: React.FC<SimpleAuthLoadingScreenProps> = ({
 
   // 건강정보 조회 중 화면
   return (
-     <SafeAreaView style={[styles.container, { backgroundColor: authInfo.color }]}>
+      // 배경색 변경
+    <SafeAreaView style={[styles.container, { backgroundColor: authInfo.color }]}>
       <View style={styles.content}>
-        <Text style={styles.logo}>
-          Care Plus<Text style={styles.plus}>+</Text>
+        <Text style={[styles.logo, { color: authInfo.textColor }]}>
+          Care Plus<Text style={[styles.plus, { color: authInfo.textColor, opacity: 0.7 }]}>+</Text>
         </Text>
 
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#FFFFFF" />
-          <Text style={styles.statusText}>{status}</Text>
+          <ActivityIndicator size="large" color={authInfo.textColor} />
+          <Text style={[styles.statusText, { color: authInfo.textColor }]}>{status}</Text>
 
-          <View style={styles.progressBar}>
+          <View style={[styles.progressBar, { backgroundColor: `${authInfo.textColor}33` }]}>
             <View
               style={[
                 styles.progressFill,
-                { width: `${progress}%` }
+                { width: `${progress}%`, backgroundColor: authInfo.textColor }
               ]}
             />
           </View>
 
-          <Text style={styles.subText}>
+          <Text style={[styles.subText, { color: authInfo.textColor, opacity: 0.8 }]}>
             잠시만 기다려주세요{'\n'}
             건강정보를 안전하게 가져오고 있습니다
           </Text>
         </View>
 
-        <View style={styles.infoBox}>
-          <Text style={styles.infoTitle}>조회중인 정보</Text>
-          <Text style={styles.infoItem}>• 최근 건강검진 결과</Text>
-          <Text style={styles.infoItem}>• 신기능 검사 결과 (크레아티닌, eGFR)</Text>
-          <Text style={styles.infoItem}>• 기저질환 정보 (고혈압, 당뇨 등)</Text>
-          <Text style={styles.infoItem}>• 복용 중인 약물 (투약내역)</Text>
+        <View style={[styles.infoBox, { backgroundColor: `${authInfo.textColor === '#FFF' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}` }]}>
+          <Text style={[styles.infoTitle, { color: authInfo.textColor }]}>조회중인 정보</Text>
+          <Text style={[styles.infoItem, { color: authInfo.textColor, opacity: 0.8 }]}>• 최근 건강검진 결과</Text>
+          <Text style={[styles.infoItem, { color: authInfo.textColor, opacity: 0.8 }]}>• 신기능 검사 결과 (크레아티닌, eGFR)</Text>
+          <Text style={[styles.infoItem, { color: authInfo.textColor, opacity: 0.8 }]}>• 기저질환 정보 (고혈압, 당뇨 등)</Text>
+          <Text style={[styles.infoItem, { color: authInfo.textColor, opacity: 0.8 }]}>• 복용 중인 약물 (투약내역)</Text>
         </View>
 
-        <Text style={styles.notice}>
+        <Text style={[styles.notice, { color: authInfo.textColor, opacity: 0.6 }]}>
           ※ 개인정보는 안전하게 보호됩니다
         </Text>
       </View>
@@ -507,7 +545,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 18,
-    color: '#FFFFFF',
+    // color: '#FFFFFF',
     marginTop: 20,
     fontWeight: '600',
   },
@@ -526,7 +564,7 @@ const styles = StyleSheet.create({
   },
   subText: {
     fontSize: 14,
-    color: '#C7D2FE',
+    // color: '#C7D2FE',
     marginTop: 20,
     textAlign: 'center',
     lineHeight: 20,
@@ -540,18 +578,18 @@ const styles = StyleSheet.create({
   },
   infoTitle: {
     fontSize: 16,
-    color: '#FFFFFF',
+    // color: '#FFFFFF',
     fontWeight: '600',
     marginBottom: 12,
   },
   infoItem: {
     fontSize: 14,
-    color: '#E0E7FF',
+    // color: '#E0E7FF',
     marginBottom: 6,
   },
   notice: {
     fontSize: 12,
-    color: '#C7D2FE',
+    // color: '#C7D2FE',
     marginTop: 40,
   },
 });
