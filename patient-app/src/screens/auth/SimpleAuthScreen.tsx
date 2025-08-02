@@ -66,7 +66,8 @@ const SimpleAuthScreen: React.FC<SimpleAuthScreenProps> = ({ navigation, route }
   // 7개 인증 방법으로 업데이트
     const authMethods = [
       { id: 'kakao', name: '카카오', icon: '💬', color: '#FEE500', textColor: '#000' },
-      { id: 'payko', name: '페이코', icon: '💳', color: '#FF1744', textColor: '#FFF' },
+      // 틸코 API에서는 페이코를 지원하고 있지 않을 가능성이 높아 임시 비활성화
+      //{ id: 'payko', name: '페이코', icon: '💳', color: '#FF1744', textColor: '#FFF' },
       { id: 'kukmin', name: 'KB국민은행', icon: '🏦', color: '#FFB300', textColor: '#000' },
       { id: 'samsung', name: '삼성패스', icon: '📱', color: '#1565C0', textColor: '#FFF' },
       { id: 'pass', name: '통신사패스', icon: '📡', color: '#4527A0', textColor: '#FFF' },
