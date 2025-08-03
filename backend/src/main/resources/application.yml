@@ -102,6 +102,7 @@ cors:
 logging:
   level:
     com.hackathon: DEBUG
+    com.hackathon.config: DEBUG
     com.hackathon.mapper: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE

@@ -1,6 +1,8 @@
-package com.hackerton.config;
+package com.hackathon.config;
 
-import
+import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Value;
+import javax.annotation.PostConstruct;
 
 @Component
 public class ClaudeConfigCheck {
