@@ -159,7 +159,7 @@ const SimpleAuthLoadingScreen: React.FC<SimpleAuthLoadingScreenProps> = ({
         phoneNumber: phoneNumber,
 
         // 건강검진 데이터 파싱
-        healthCheckup: integratedResponse.healthCheckupData || {},
+        healthCheckupData: integratedResponse.healthCheckupData || {},
 
         // 투약 데이터 파싱
         medications: integratedResponse.medicationData || {},

@@ -133,7 +133,7 @@ claude:
   api:
     url: https://api.anthropic.com/v1/messages
     key: ${CLAUDE_API_KEY:your-claude-api-key-here}
-    model: claude-3-sonnet-20240320
+    model: claude-3-5-sonnet-20241022
     max-tokens: 1000
 
 # gpt api 설정

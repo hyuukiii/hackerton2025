@@ -106,9 +106,11 @@ const UserInfoScreen: React.FC<UserInfoScreenProps> = ({ navigation, route }) =>
 
       await AsyncStorage.setItem('userInfo', JSON.stringify(userInfo));
 
-      // 이미 받아온 건강 데이터 가져오기
+      // 건강 데이터 다시 가져오기
       const healthDataStr = await AsyncStorage.getItem('healthData');
       const healthData = healthDataStr ? JSON.parse(healthDataStr) : null;
+
+      console.log('HealthCheckDate로 전달할 healthData:', healthData);
 
       // authData도 가져오기
       const authDataStr = await AsyncStorage.getItem('authData');
