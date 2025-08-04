@@ -304,7 +304,8 @@ public class ClaudeAiService {
                     for (Object resultObj : resultList) {
                         if (resultObj instanceof JSONObject) {
                             JSONObject result = (JSONObject) resultObj;
-                            Object detailListObj = result.get("RetrieveTreatmentInjectionInformationPersonDetailList");
+                            // 대문자 R을 소문자 r로 변경
+                            Object detailListObj = result.get("retrieveTreatmentInjectionInformationPersonDetailList");
 
                             if (detailListObj instanceof JSONArray) {
                                 JSONArray detailList = (JSONArray) detailListObj;
@@ -312,7 +313,7 @@ public class ClaudeAiService {
                                 for (Object detailObj : detailList) {
                                     if (detailObj instanceof JSONObject) {
                                         JSONObject detail = (JSONObject) detailObj;
-                                        String drugName = (String) detail.get("ChoBangYakPumMyung");
+                                        String drugName = (String) detail.get("choBangYakPumMyung");
                                         if (drugName != null && !drugName.trim().isEmpty()) {
                                             medicationNames.add(drugName.trim());
                                         }
@@ -333,6 +334,7 @@ public class ClaudeAiService {
     }
 
 
+
     /**
      * 처방 데이터에서 약물 정보를 추출하는 메소드
      */
@@ -351,14 +353,15 @@ public class ClaudeAiService {
                         if (resultObj instanceof JSONObject) {
                             JSONObject result = (JSONObject) resultObj;
 
-                            // 진료일자
-                            String treatmentDate = (String) result.get("JinRyoGaesiIl");
-                            String hospitalName = (String) result.get("ByungEuiwonYakGukMyung");
+                            // 진료일자 (필드명은 그대로 유지 - 이미 올바름)
+                            String treatmentDate = (String) result.get("jinRyoGaesiIl");
+                            String hospitalName = (String) result.get("byungEuiwonYakGukMyung");
 
                             medicationInfo.append("진료일자: ").append(treatmentDate)
                                     .append(", 병원: ").append(hospitalName).append("\n");
 
-                            Object detailListObj = result.get("RetrieveTreatmentInjectionInformationPersonDetailList");
+                            // 대문자 R을 소문자 r로 변경
+                            Object detailListObj = result.get("retrieveTreatmentInjectionInformationPersonDetailList");
 
                             if (detailListObj instanceof JSONArray) {
                                 JSONArray detailList = (JSONArray) detailListObj;
@@ -367,8 +370,8 @@ public class ClaudeAiService {
                                     if (detailObj instanceof JSONObject) {
                                         JSONObject detail = (JSONObject) detailObj;
 
-                                        String drugName = (String) detail.get("ChoBangYakPumMyung");
-                                        String dosageDays = (String) detail.get("TuyakIlSoo");
+                                        String drugName = (String) detail.get("choBangYakPumMyung");
+                                        String dosageDays = (String) detail.get("tuyakIlSoo");
 
                                         medicationInfo.append("- 약물명: ").append(drugName)
                                                 .append(", 투약일수: ").append(dosageDays)
