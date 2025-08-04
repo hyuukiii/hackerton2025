@@ -37,16 +37,13 @@ const HealthCheckDateScreen: React.FC<HealthCheckDateScreenProps> = ({ navigatio
   const parseLatestHealthCheckDate = () => {
     try {
       console.log('=== 건강검진 날짜 파싱 시작 ===');
-      //console.log('전체 healthData:', JSON.stringify(healthData, null, 2));
-      //console.log('healthCheckupData:', healthData?.healthCheckupData);
-      //console.log('ResultList:', healthData?.healthCheckupData?.ResultList);
 
-      if (healthData?.healthCheckup?.ResultList && healthData.healthCheckup.ResultList.length > 0) {
+      // healthCheckup이 아니라 healthCheckupData로 수정!
+      if (healthData?.healthCheckupData?.ResultList && healthData.healthCheckupData.ResultList.length > 0) {
         // 연도별로 정렬해서 가장 최근 검진 찾기
         const sortedCheckups = [...healthData.healthCheckupData.ResultList].sort((a, b) => {
           const yearA = parseInt(a.Year?.replace('년', '') || '0');
           const yearB = parseInt(b.Year?.replace('년', '') || '0');
-          console.log(`정렬 비교: ${a.Year}(${yearA}) vs ${b.Year}(${yearB})`);
           return yearB - yearA; // 내림차순 정렬
         });
 
@@ -58,10 +55,7 @@ const HealthCheckDateScreen: React.FC<HealthCheckDateScreenProps> = ({ navigatio
         const checkDate = latestCheckup.CheckUpDate ? latestCheckup.CheckUpDate.replace('/', '.') : '';
         const year = latestCheckup.Year ? latestCheckup.Year.replace('년', '') : '';
 
-        const formattedDate = `${year}.${checkDate}`;
-        console.log('포맷된 날짜:', formattedDate);
-
-        setLatestCheckupDate(formattedDate);
+        setLatestCheckupDate(`${year}.${checkDate}`);
         setHospitalName(latestCheckup.Location || '검진기관');
       } else {
         console.log('건강검진 데이터가 없습니다');

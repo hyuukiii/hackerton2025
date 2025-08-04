@@ -130,66 +130,124 @@ public class ClaudeAiService {
             throw new IOException("Claude API 키가 설정되지 않았습니다.");
         }
 
-        OkHttpClient client = new OkHttpClient.Builder()
-                .connectTimeout(60, TimeUnit.SECONDS)
-                .readTimeout(60, TimeUnit.SECONDS)
-                .writeTimeout(60, TimeUnit.SECONDS)
-                .build();
+        // 재시도 설정
+        int maxRetries = 3;
+        int retryDelay = 2000; // 초기 지연 시간 2초
 
-        // 요청 DTO 생성
-        ClaudeApiRequestDto requestDto = new ClaudeApiRequestDto();
-        requestDto.setModel(claudeModel);
-        requestDto.setMaxTokens(maxTokens);
-        requestDto.setTemperature(0.3);
+        for (int attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                OkHttpClient client = new OkHttpClient.Builder()
+                        .connectTimeout(60, TimeUnit.SECONDS)
+                        .readTimeout(60, TimeUnit.SECONDS)
+                        .writeTimeout(60, TimeUnit.SECONDS)
+                        .build();
 
-        // 메시지 생성
-        ClaudeApiRequestDto.Message userMessage = new ClaudeApiRequestDto.Message();
-        userMessage.setRole("user");
-        userMessage.setContent(prompt);
+                // 요청 DTO 생성
+                ClaudeApiRequestDto requestDto = new ClaudeApiRequestDto();
+                requestDto.setModel(claudeModel);
+                requestDto.setMaxTokens(maxTokens);
+                requestDto.setTemperature(0.3);
 
-        requestDto.setMessages(Arrays.asList(userMessage));
+                // 메시지 생성
+                ClaudeApiRequestDto.Message userMessage = new ClaudeApiRequestDto.Message();
+                userMessage.setRole("user");
+                userMessage.setContent(prompt);
 
-        // JSON 변환
-        String requestJson = objectMapper.writeValueAsString(requestDto);
+                requestDto.setMessages(Arrays.asList(userMessage));
 
-        System.out.println("=== Claude API 요청 ===");
-        System.out.println("URL: " + claudeApiUrl);
-        System.out.println("Model: " + claudeModel);
+                // JSON 변환
+                String requestJson = objectMapper.writeValueAsString(requestDto);
 
-        // HTTP 요청 생성
-        Request request = new Request.Builder()
-                .url(claudeApiUrl)
-                .addHeader("Content-Type", "application/json")
-                .addHeader("x-api-key", claudeApiKey)
-                .addHeader("anthropic-version", "2023-06-01")
-                .post(RequestBody.create(MediaType.get("application/json; charset=utf-8"), requestJson))
-                .build();
+                System.out.println("=== Claude API 요청 ===");
+                System.out.println("URL: " + claudeApiUrl);
+                System.out.println("Model: " + claudeModel);
+                if (attempt > 0) {
+                    System.out.println("재시도 횟수: " + attempt + "/" + maxRetries);
+                }
 
-        // API 호출
-        try (Response response = client.newCall(request).execute()) {
-            System.out.println("Claude API 응답 코드: " + response.code());
+                // HTTP 요청 생성
+                Request request = new Request.Builder()
+                        .url(claudeApiUrl)
+                        .addHeader("Content-Type", "application/json")
+                        .addHeader("x-api-key", claudeApiKey)
+                        .addHeader("anthropic-version", "2023-06-01")
+                        .post(RequestBody.create(MediaType.get("application/json; charset=utf-8"), requestJson))
+                        .build();
 
-            if (response.body() == null) {
-                throw new IOException("Claude API 응답 본문이 비어있습니다.");
-            }
+                // API 호출
+                try (Response response = client.newCall(request).execute()) {
+                    System.out.println("Claude API 응답 코드: " + response.code());
 
-            String responseBody = response.body().string();
+                    if (response.body() == null) {
+                        throw new IOException("Claude API 응답 본문이 비어있습니다.");
+                    }
 
-            if (!response.isSuccessful()) {
-                System.err.println("Claude API 오류 응답: " + responseBody);
+                    String responseBody = response.body().string();
 
-                if (response.code() == 401) {
-                    throw new IOException("Claude API 인증 실패: API 키를 확인해주세요.");
-                } else if (response.code() == 429) {
-                    throw new IOException("Claude API 요청 한도 초과: 잠시 후 다시 시도해주세요.");
-                } else {
+                    // 성공적인 응답
+                    if (response.isSuccessful()) {
+                        System.out.println("Claude API 성공적 응답 수신");
+                        return responseBody;
+                    }
+
+                    // 에러 응답 처리
+                    System.err.println("Claude API 오류 응답: " + responseBody);
+
+                    // 401: 인증 실패
+                    if (response.code() == 401) {
+                        throw new IOException("Claude API 인증 실패: API 키를 확인해주세요.");
+                    }
+
+                    // 429: 요청 한도 초과
+                    if (response.code() == 429) {
+                        if (attempt < maxRetries - 1) {
+                            System.out.println("Claude API 요청 한도 초과. " + (retryDelay / 1000) + "초 후 재시도...");
+                            Thread.sleep(retryDelay);
+                            retryDelay *= 2; // Exponential backoff
+                            continue;
+                        } else {
+                            throw new IOException("Claude API 요청 한도 초과: 잠시 후 다시 시도해주세요.");
+                        }
+                    }
+
+                    // 529: 서버 과부하
+                    if (response.code() == 529) {
+                        if (attempt < maxRetries - 1) {
+                            System.out.println("Claude API 서버 과부하. " + (retryDelay / 1000) + "초 후 재시도...");
+                            Thread.sleep(retryDelay);
+                            retryDelay *= 2; // Exponential backoff
+                            continue;
+                        } else {
+                            throw new IOException("Claude API 서버 과부하: 잠시 후 다시 시도해주세요.");
+                        }
+                    }
+
+                    // 기타 에러
                     throw new IOException("Claude API 호출 실패: " + response.code());
                 }
-            }
 
-            System.out.println("Claude API 성공적 응답 수신");
-            return responseBody;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("Claude API 호출 중 인터럽트 발생");
+            } catch (IOException e) {
+                // 마지막 시도가 아니면 재시도
+                if (attempt < maxRetries - 1 && !e.getMessage().contains("인증 실패")) {
+                    System.out.println("Claude API 호출 실패. " + (retryDelay / 1000) + "초 후 재시도...");
+                    try {
+                        Thread.sleep(retryDelay);
+                        retryDelay *= 2;
+                        continue;
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new IOException("재시도 중 인터럽트 발생");
+                    }
+                }
+                throw e;
+            }
         }
+
+        // 모든 재시도 실패
+        throw new IOException("Claude API 호출 실패: 모든 재시도 시도가 실패했습니다.");
     }
 
     /**
