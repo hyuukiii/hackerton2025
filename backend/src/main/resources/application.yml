@@ -129,12 +129,11 @@ tilko:
     host: https://api.tilko.net
     key: ${TILKO_API_KEY:your-tilko-api-key-here}
 
-# 모델명 :claude-3-sonnet-20240229
 claude:
   api:
     url: https://api.anthropic.com/v1/messages
     key: ${CLAUDE_API_KEY:your-claude-api-key-here}
-    model: claude-3-sonnet-20240229
+    model: claude-3-sonnet-20240320
     max-tokens: 1000
 
 # gpt api 설정

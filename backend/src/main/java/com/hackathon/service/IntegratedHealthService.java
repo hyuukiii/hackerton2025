@@ -206,12 +206,11 @@ public class IntegratedHealthService {
             }
 
             String responseStr = response.body().string();
+
+            System.out.println("Raw Response (처음 100자): " +
+                    (responseStr.length() > 100 ? responseStr.substring(0, 100) + "..." : responseStr));
             // 100자 제한 없이 전체 출력
-            System.out.println("전체 응답: " + responseStr);
-
-            // System.out.println("Raw Response (처음 100자): " +
-            //        (responseStr.length() > 100 ? responseStr.substring(0, 100) + "..." : responseStr));
-
+            //System.out.println("전체 응답: " + responseStr);
             // JSON 파싱
             JSONParser parser = new JSONParser();
             JSONObject jsonResponse = (JSONObject) parser.parse(responseStr);

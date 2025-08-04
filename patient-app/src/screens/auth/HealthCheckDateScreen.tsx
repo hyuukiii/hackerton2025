@@ -36,20 +36,25 @@ const HealthCheckDateScreen: React.FC<HealthCheckDateScreenProps> = ({ navigatio
 
   const parseLatestHealthCheckDate = () => {
     try {
-      // 실제 API 응답에서 최근 건강검진 날짜 파싱
       if (healthData?.healthCheckupData?.ResultList && healthData.healthCheckupData.ResultList.length > 0) {
-        // 가장 최근 검진 (첫 번째 항목)
-        const latestCheckup = healthData.healthCheckupData.ResultList[0];
-        console.log('최근 건강검진:', latestCheckup);
+        // 연도별로 정렬해서 가장 최근 검진 찾기
+        const sortedCheckups = [...healthData.healthCheckupData.ResultList].sort((a, b) => {
+          const yearA = parseInt(a.Year?.replace('년', '') || '0');
+          const yearB = parseInt(b.Year?.replace('년', '') || '0');
+          return yearB - yearA; // 내림차순 정렬
+        });
 
-        // 날짜 포맷 변환 (01/18 -> 01.18)
+        // 가장 최근 검진 선택
+        const latestCheckup = sortedCheckups[0];
+        console.log('가장 최근 건강검진:', latestCheckup);
+
+        // 날짜 포맷 변환
         const checkDate = latestCheckup.CheckUpDate ? latestCheckup.CheckUpDate.replace('/', '.') : '';
         const year = latestCheckup.Year ? latestCheckup.Year.replace('년', '') : '';
 
         setLatestCheckupDate(`${year}.${checkDate}`);
         setHospitalName(latestCheckup.Location || '검진기관');
       } else {
-        // 건강검진 데이터가 없는 경우
         setLatestCheckupDate('검진 기록 없음');
         setHospitalName('');
       }
