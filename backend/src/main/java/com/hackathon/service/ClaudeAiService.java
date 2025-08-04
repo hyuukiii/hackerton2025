@@ -296,21 +296,20 @@ public class ClaudeAiService {
         try {
             if (medicationData instanceof JSONObject) {
                 JSONObject data = (JSONObject) medicationData;
-                Object prescriptionData = data.get("PrescriptionData");
+                Object resultListObj = data.get("ResultList");
 
-                if (prescriptionData instanceof JSONArray) {
-                    JSONArray prescriptions = (JSONArray) prescriptionData;
+                if (resultListObj instanceof JSONArray) {
+                    JSONArray resultList = (JSONArray) resultListObj;
 
-                    for (Object prescriptionObj : prescriptions) {
-                        if (prescriptionObj instanceof JSONObject) {
-                            JSONObject prescription = (JSONObject) prescriptionObj;
+                    for (Object resultObj : resultList) {
+                        if (resultObj instanceof JSONObject) {
+                            JSONObject result = (JSONObject) resultObj;
+                            Object detailListObj = result.get("RetrieveTreatmentInjectionInformationPersonDetailList");
 
-                            // 약물 상세 정보
-                            Object medicationDetails = prescription.get("MedicationDetails");
-                            if (medicationDetails instanceof JSONArray) {
-                                JSONArray details = (JSONArray) medicationDetails;
+                            if (detailListObj instanceof JSONArray) {
+                                JSONArray detailList = (JSONArray) detailListObj;
 
-                                for (Object detailObj : details) {
+                                for (Object detailObj : detailList) {
                                     if (detailObj instanceof JSONObject) {
                                         JSONObject detail = (JSONObject) detailObj;
                                         String drugName = (String) detail.get("ChoBangYakPumMyung");
@@ -326,10 +325,13 @@ public class ClaudeAiService {
             }
         } catch (Exception e) {
             System.err.println("약물명 추출 중 오류: " + e.getMessage());
+            e.printStackTrace();
         }
 
+        System.out.println("추출된 약물명: " + medicationNames);
         return medicationNames;
     }
+
 
     /**
      * 처방 데이터에서 약물 정보를 추출하는 메소드
@@ -340,51 +342,41 @@ public class ClaudeAiService {
         try {
             if (medicationData instanceof JSONObject) {
                 JSONObject data = (JSONObject) medicationData;
-                Object prescriptionData = data.get("PrescriptionData");
+                Object resultListObj = data.get("ResultList");
 
-                if (prescriptionData instanceof JSONArray) {
-                    JSONArray prescriptions = (JSONArray) prescriptionData;
+                if (resultListObj instanceof JSONArray) {
+                    JSONArray resultList = (JSONArray) resultListObj;
 
-                    for (Object prescriptionObj : prescriptions) {
-                        if (prescriptionObj instanceof JSONObject) {
-                            JSONObject prescription = (JSONObject) prescriptionObj;
+                    for (Object resultObj : resultList) {
+                        if (resultObj instanceof JSONObject) {
+                            JSONObject result = (JSONObject) resultObj;
 
                             // 진료일자
-                            String treatmentDate = (String) prescription.get("JinRyoGaesiIl");
-                            medicationInfo.append("진료일자: ").append(treatmentDate).append("\\n");
+                            String treatmentDate = (String) result.get("JinRyoGaesiIl");
+                            String hospitalName = (String) result.get("ByungEuiwonYakGukMyung");
 
-                            // 약물 상세 정보
-                            Object medicationDetails = prescription.get("MedicationDetails");
-                            if (medicationDetails instanceof JSONArray) {
-                                JSONArray details = (JSONArray) medicationDetails;
+                            medicationInfo.append("진료일자: ").append(treatmentDate)
+                                    .append(", 병원: ").append(hospitalName).append("\n");
 
-                                for (Object detailObj : details) {
+                            Object detailListObj = result.get("RetrieveTreatmentInjectionInformationPersonDetailList");
+
+                            if (detailListObj instanceof JSONArray) {
+                                JSONArray detailList = (JSONArray) detailListObj;
+
+                                for (Object detailObj : detailList) {
                                     if (detailObj instanceof JSONObject) {
                                         JSONObject detail = (JSONObject) detailObj;
 
                                         String drugName = (String) detail.get("ChoBangYakPumMyung");
-                                        String drugEffect = (String) detail.get("ChoBangYakPumHyoneung");
                                         String dosageDays = (String) detail.get("TuyakIlSoo");
 
-                                        Object drugDetailInfo = detail.get("DrugDetailInfo");
-                                        if (drugDetailInfo instanceof JSONObject) {
-                                            JSONObject drugDetail = (JSONObject) drugDetailInfo;
-                                            String component = (String) drugDetail.get("CmpnInfo");
-                                            String atcInfo = (String) drugDetail.get("AtcInfo");
-                                            String kpicInfo = (String) drugDetail.get("KpicInfo");
-
-                                            medicationInfo.append("- 약물명: ").append(drugName)
-                                                    .append(", 효능: ").append(drugEffect)
-                                                    .append(", 투약일수: ").append(dosageDays)
-                                                    .append(", 성분: ").append(component)
-                                                    .append(", ATC분류: ").append(atcInfo)
-                                                    .append(", KPIC분류: ").append(kpicInfo)
-                                                    .append("\\n");
-                                        }
+                                        medicationInfo.append("- 약물명: ").append(drugName)
+                                                .append(", 투약일수: ").append(dosageDays)
+                                                .append("\n");
                                     }
                                 }
                             }
-                            medicationInfo.append("\\n");
+                            medicationInfo.append("\n");
                         }
                     }
                 }
