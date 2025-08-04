@@ -9,11 +9,11 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -290,11 +290,46 @@ public class ClaudeAiService {
     /**
      * 처방 데이터에서 실제 약물명 목록을 추출하는 메소드
      */
+    /**
+     * 처방 데이터에서 실제 약물명 목록을 추출하는 메소드
+     */
     private List<String> extractMedicationNames(Object medicationData) {
         List<String> medicationNames = new ArrayList<>();
 
         try {
-            if (medicationData instanceof JSONObject) {
+            // LinkedHashMap 타입 처리 (Spring Boot가 JSON을 자동 변환한 경우)
+            if (medicationData instanceof Map) {
+                Map<String, Object> data = (Map<String, Object>) medicationData;
+                Object resultListObj = data.get("ResultList");
+
+                if (resultListObj instanceof List) {
+                    List<Object> resultList = (List<Object>) resultListObj;
+
+                    for (Object resultObj : resultList) {
+                        if (resultObj instanceof Map) {
+                            Map<String, Object> result = (Map<String, Object>) resultObj;
+                            // 소문자 r로 시작하는 필드명 사용
+                            Object detailListObj = result.get("retrieveTreatmentInjectionInformationPersonDetailList");
+
+                            if (detailListObj instanceof List) {
+                                List<Object> detailList = (List<Object>) detailListObj;
+
+                                for (Object detailObj : detailList) {
+                                    if (detailObj instanceof Map) {
+                                        Map<String, Object> detail = (Map<String, Object>) detailObj;
+                                        String drugName = (String) detail.get("choBangYakPumMyung");
+                                        if (drugName != null && !drugName.trim().isEmpty()) {
+                                            medicationNames.add(drugName.trim());
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            // JSONObject 타입 처리 (직접 JSONObject를 받은 경우)
+            else if (medicationData instanceof JSONObject) {
                 JSONObject data = (JSONObject) medicationData;
                 Object resultListObj = data.get("ResultList");
 
@@ -304,7 +339,7 @@ public class ClaudeAiService {
                     for (Object resultObj : resultList) {
                         if (resultObj instanceof JSONObject) {
                             JSONObject result = (JSONObject) resultObj;
-                            // 대문자 R을 소문자 r로 변경
+                            // 소문자 r로 시작하는 필드명 사용
                             Object detailListObj = result.get("retrieveTreatmentInjectionInformationPersonDetailList");
 
                             if (detailListObj instanceof JSONArray) {
@@ -333,8 +368,6 @@ public class ClaudeAiService {
         return medicationNames;
     }
 
-
-
     /**
      * 처방 데이터에서 약물 정보를 추출하는 메소드
      */
@@ -342,7 +375,50 @@ public class ClaudeAiService {
         StringBuilder medicationInfo = new StringBuilder();
 
         try {
-            if (medicationData instanceof JSONObject) {
+            // LinkedHashMap 타입 처리 (Spring Boot가 JSON을 자동 변환한 경우)
+            if (medicationData instanceof Map) {
+                Map<String, Object> data = (Map<String, Object>) medicationData;
+                Object resultListObj = data.get("ResultList");
+
+                if (resultListObj instanceof List) {
+                    List<Object> resultList = (List<Object>) resultListObj;
+
+                    for (Object resultObj : resultList) {
+                        if (resultObj instanceof Map) {
+                            Map<String, Object> result = (Map<String, Object>) resultObj;
+
+                            // 소문자로 시작하는 필드명 사용
+                            String treatmentDate = (String) result.get("jinRyoGaesiIl");
+                            String hospitalName = (String) result.get("byungEuiwonYakGukMyung");
+
+                            medicationInfo.append("진료일자: ").append(treatmentDate)
+                                    .append(", 병원: ").append(hospitalName).append("\n");
+
+                            Object detailListObj = result.get("retrieveTreatmentInjectionInformationPersonDetailList");
+
+                            if (detailListObj instanceof List) {
+                                List<Object> detailList = (List<Object>) detailListObj;
+
+                                for (Object detailObj : detailList) {
+                                    if (detailObj instanceof Map) {
+                                        Map<String, Object> detail = (Map<String, Object>) detailObj;
+
+                                        String drugName = (String) detail.get("choBangYakPumMyung");
+                                        String dosageDays = (String) detail.get("tuyakIlSoo");
+
+                                        medicationInfo.append("- 약물명: ").append(drugName)
+                                                .append(", 투약일수: ").append(dosageDays)
+                                                .append("\n");
+                                    }
+                                }
+                            }
+                            medicationInfo.append("\n");
+                        }
+                    }
+                }
+            }
+            // JSONObject 타입 처리 (직접 JSONObject를 받은 경우)
+            else if (medicationData instanceof JSONObject) {
                 JSONObject data = (JSONObject) medicationData;
                 Object resultListObj = data.get("ResultList");
 
@@ -353,14 +429,13 @@ public class ClaudeAiService {
                         if (resultObj instanceof JSONObject) {
                             JSONObject result = (JSONObject) resultObj;
 
-                            // 진료일자 (필드명은 그대로 유지 - 이미 올바름)
+                            // 소문자로 시작하는 필드명 사용
                             String treatmentDate = (String) result.get("jinRyoGaesiIl");
                             String hospitalName = (String) result.get("byungEuiwonYakGukMyung");
 
                             medicationInfo.append("진료일자: ").append(treatmentDate)
                                     .append(", 병원: ").append(hospitalName).append("\n");
 
-                            // 대문자 R을 소문자 r로 변경
                             Object detailListObj = result.get("retrieveTreatmentInjectionInformationPersonDetailList");
 
                             if (detailListObj instanceof JSONArray) {
