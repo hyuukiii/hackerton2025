@@ -79,13 +79,12 @@ const HealthCheckDateScreen: React.FC<HealthCheckDateScreenProps> = ({ navigatio
         hospital: hospitalName,
       };
       await AsyncStorage.setItem('latestCheckupInfo', JSON.stringify(checkupInfo));
-
       // 복약 정보 기반 AI 기저질환 분석 요청
       let diseaseAnalysis;
 
       try {
         // 백엔드 API 호출 - 투약 데이터 기반 기저질환 분석
-        const medicationData = healthData?.medicationData || {};
+        const medicationData = healthData?.medications || {};
         console.log('기저질환 분석 요청 - medicationData:', medicationData);
 
         diseaseAnalysis = await api.post('/integrated/analyze-diseases', {
@@ -114,7 +113,7 @@ const HealthCheckDateScreen: React.FC<HealthCheckDateScreenProps> = ({ navigatio
         authData,
         userInfo,
         healthData,
-        selectedCheckupDate: checkupInfo,
+        checkupInfo: checkupInfo,
         diseaseAnalysis,
       });
 

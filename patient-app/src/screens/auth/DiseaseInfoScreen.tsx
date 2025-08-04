@@ -36,8 +36,8 @@ const DiseaseInfoScreen: React.FC<DiseaseInfoScreenProps> = ({ navigation, route
   }, [diseaseAnalysis]);
 
   const parseDiseases = () => {
-    if (diseaseAnalysis?.diseases && Array.isArray(diseaseAnalysis.diseases)) {
-      setDiseases(diseaseAnalysis.diseases);
+    if (diseaseAnalysis?.predictedDiseases && Array.isArray(diseaseAnalysis.predictedDiseases)) {
+      setDiseases(diseaseAnalysis.predictedDiseases);
     }
   };
 
