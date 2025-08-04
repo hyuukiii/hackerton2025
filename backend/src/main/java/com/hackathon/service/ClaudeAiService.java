@@ -294,23 +294,97 @@ public class ClaudeAiService {
         List<String> medicationNames = new ArrayList<>();
 
         try {
-            // LinkedHashMap 타입 처리 (Spring Boot가 JSON을 자동 변환한 경우)
+            System.out.println("=== 상세 데이터 구조 디버깅 ===");
+            System.out.println("medicationData 타입: " + medicationData.getClass().getName());
+
             if (medicationData instanceof Map) {
                 Map<String, Object> data = (Map<String, Object>) medicationData;
+                System.out.println("최상위 키들: " + data.keySet());
 
-                // medicationData 안의 medicationData를 가져옴
+                // medicationData 키의 값 확인
                 Object innerMedicationData = data.get("medicationData");
+                System.out.println("innerMedicationData 타입: " +
+                        (innerMedicationData != null ? innerMedicationData.getClass().getName() : "null"));
+
                 if (innerMedicationData instanceof Map) {
                     Map<String, Object> medData = (Map<String, Object>) innerMedicationData;
+                    System.out.println("medicationData 내부 키들: " + medData.keySet());
+
                     Object resultListObj = medData.get("ResultList");
+                    System.out.println("ResultList 타입: " +
+                            (resultListObj != null ? resultListObj.getClass().getName() : "null"));
 
                     if (resultListObj instanceof List) {
                         List<Object> resultList = (List<Object>) resultListObj;
+                        System.out.println("ResultList 크기: " + resultList.size());
 
+                        // 첫 번째 아이템 상세 확인
+                        if (!resultList.isEmpty()) {
+                            Object firstItem = resultList.get(0);
+                            System.out.println("\n=== 첫 번째 ResultList 아이템 분석 ===");
+                            System.out.println("첫 번째 아이템 타입: " + firstItem.getClass().getName());
+
+                            if (firstItem instanceof Map) {
+                                Map<String, Object> firstResult = (Map<String, Object>) firstItem;
+                                System.out.println("사용 가능한 모든 키들:");
+                                for (String key : firstResult.keySet()) {
+                                    Object value = firstResult.get(key);
+                                    String valueType = value != null ? value.getClass().getSimpleName() : "null";
+                                    System.out.println("  - " + key + " (" + valueType + ")");
+                                }
+
+                                // 가능한 필드명들 체크
+                                String[] possibleDetailFields = {
+                                        "retrieveTreatmentInjectionInformationPersonDetailList",
+                                        "RetrieveTreatmentInjectionInformationPersonDetailList",
+                                        "detailList",
+                                        "DetailList",
+                                        "details",
+                                        "Details",
+                                        "medicationDetails",
+                                        "MedicationDetails"
+                                };
+
+                                System.out.println("\n=== 상세 필드 검색 ===");
+                                for (String fieldName : possibleDetailFields) {
+                                    Object detailObj = firstResult.get(fieldName);
+                                    if (detailObj != null) {
+                                        System.out.println("\n★★★ 발견된 상세 필드: " + fieldName);
+                                        System.out.println("타입: " + detailObj.getClass().getName());
+
+                                        if (detailObj instanceof List) {
+                                            List<Object> detailList = (List<Object>) detailObj;
+                                            System.out.println("상세 리스트 크기: " + detailList.size());
+
+                                            if (!detailList.isEmpty()) {
+                                                Object firstDetail = detailList.get(0);
+                                                System.out.println("첫 번째 상세 아이템 타입: " + firstDetail.getClass().getName());
+
+                                                if (firstDetail instanceof Map) {
+                                                    Map<String, Object> detail = (Map<String, Object>) firstDetail;
+                                                    System.out.println("\n상세 아이템의 모든 키와 값:");
+                                                    for (Map.Entry<String, Object> entry : detail.entrySet()) {
+                                                        String val = entry.getValue() != null ?
+                                                                entry.getValue().toString() : "null";
+                                                        // 긴 값은 앞부분만 표시
+                                                        if (val.length() > 50) {
+                                                            val = val.substring(0, 50) + "...";
+                                                        }
+                                                        System.out.println("    - " + entry.getKey() + ": " + val);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        // 실제 추출 로직 (디버깅 결과를 바탕으로 수정 필요)
                         for (Object resultObj : resultList) {
                             if (resultObj instanceof Map) {
                                 Map<String, Object> result = (Map<String, Object>) resultObj;
-                                // 소문자 r로 시작하는 필드명 사용
                                 Object detailListObj = result.get("retrieveTreatmentInjectionInformationPersonDetailList");
 
                                 if (detailListObj instanceof List) {
@@ -319,9 +393,24 @@ public class ClaudeAiService {
                                     for (Object detailObj : detailList) {
                                         if (detailObj instanceof Map) {
                                             Map<String, Object> detail = (Map<String, Object>) detailObj;
-                                            String drugName = (String) detail.get("choBangYakPumMyung");
-                                            if (drugName != null && !drugName.trim().isEmpty()) {
-                                                medicationNames.add(drugName.trim());
+
+                                            // 가능한 약물명 필드들 시도
+                                            String[] possibleDrugFields = {
+                                                    "choBangYakPumMyung",
+                                                    "ChoBangYakPumMyung",
+                                                    "drugName",
+                                                    "DrugName",
+                                                    "medicationName",
+                                                    "MedicationName"
+                                            };
+
+                                            for (String field : possibleDrugFields) {
+                                                String drugName = (String) detail.get(field);
+                                                if (drugName != null && !drugName.trim().isEmpty()) {
+                                                    medicationNames.add(drugName.trim());
+                                                    System.out.println("약물 추출 성공: " + field + " = " + drugName);
+                                                    break;
+                                                }
                                             }
                                         }
                                     }
@@ -331,49 +420,16 @@ public class ClaudeAiService {
                     }
                 }
             }
-            // JSONObject 타입 처리 (직접 JSONObject를 받은 경우)
-            else if (medicationData instanceof JSONObject) {
-                JSONObject data = (JSONObject) medicationData;
 
-                // medicationData 안의 medicationData를 가져옴
-                Object innerMedicationData = data.get("medicationData");
-                if (innerMedicationData instanceof JSONObject) {
-                    JSONObject medData = (JSONObject) innerMedicationData;
-                    Object resultListObj = medData.get("ResultList");
-
-                    if (resultListObj instanceof JSONArray) {
-                        JSONArray resultList = (JSONArray) resultListObj;
-
-                        for (Object resultObj : resultList) {
-                            if (resultObj instanceof JSONObject) {
-                                JSONObject result = (JSONObject) resultObj;
-                                // 소문자 r로 시작하는 필드명 사용
-                                Object detailListObj = result.get("retrieveTreatmentInjectionInformationPersonDetailList");
-
-                                if (detailListObj instanceof JSONArray) {
-                                    JSONArray detailList = (JSONArray) detailListObj;
-
-                                    for (Object detailObj : detailList) {
-                                        if (detailObj instanceof JSONObject) {
-                                            JSONObject detail = (JSONObject) detailObj;
-                                            String drugName = (String) detail.get("choBangYakPumMyung");
-                                            if (drugName != null && !drugName.trim().isEmpty()) {
-                                                medicationNames.add(drugName.trim());
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
         } catch (Exception e) {
             System.err.println("약물명 추출 중 오류: " + e.getMessage());
             e.printStackTrace();
         }
 
-        System.out.println("추출된 약물명: " + medicationNames);
+        System.out.println("\n=== 디버깅 종료 ===");
+        System.out.println("최종 추출된 약물명: " + medicationNames);
+        System.out.println("추출된 약물 개수: " + medicationNames.size());
+
         return medicationNames;
     }
 
@@ -492,7 +548,7 @@ public class ClaudeAiService {
      */
     private String extractJsonArrayFromText(String text) {
         try {
-            System.out.println("=== 원본 ChatGPT 응답 ===");
+            System.out.println("=== 원본 Claude ai 응답 ===");
             System.out.println(text);
             System.out.println("=========================");
 
