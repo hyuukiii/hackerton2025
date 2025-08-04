@@ -366,7 +366,6 @@ public class ClaudeAiService {
                                                     for (Map.Entry<String, Object> entry : detail.entrySet()) {
                                                         String val = entry.getValue() != null ?
                                                                 entry.getValue().toString() : "null";
-                                                        // 긴 값은 앞부분만 표시
                                                         if (val.length() > 50) {
                                                             val = val.substring(0, 50) + "...";
                                                         }
@@ -381,11 +380,48 @@ public class ClaudeAiService {
                             }
                         }
 
-                        // 실제 추출 로직 (디버깅 결과를 바탕으로 수정 필요)
+                        // 모든 ResultList 아이템의 상세 리스트 크기 확인
+                        System.out.println("\n=== 모든 ResultList 아이템의 상세 리스트 크기 확인 ===");
+                        int itemIndex = 0;
+                        int totalDetailCount = 0;
+
+                        for (Object item : resultList) {
+                            if (item instanceof Map) {
+                                Map<String, Object> resultItem = (Map<String, Object>) item;
+                                Object detailList = resultItem.get("RetrieveTreatmentInjectionInformationPersonDetailList");
+
+                                if (detailList instanceof List) {
+                                    int detailSize = ((List<?>) detailList).size();
+                                    if (detailSize > 0) {
+                                        System.out.println("\n아이템 " + itemIndex + ": " + detailSize + "개의 상세 정보");
+                                        totalDetailCount += detailSize;
+
+                                        // 진료형태도 확인
+                                        String jinRyoType = (String) resultItem.get("JinRyoHyungTae");
+                                        String hospital = (String) resultItem.get("ByungEuiwonYakGukMyung");
+                                        System.out.println("  - 진료형태: " + jinRyoType);
+                                        System.out.println("  - 병원명: " + hospital);
+
+                                        // 첫 번째 약물 정보 확인
+                                        List<Object> details = (List<Object>) detailList;
+                                        if (!details.isEmpty() && details.get(0) instanceof Map) {
+                                            Map<String, Object> firstDrug = (Map<String, Object>) details.get(0);
+                                            System.out.println("  - 첫 번째 약물 샘플: " + firstDrug.get("ChoBangYakPumMyung"));
+                                        }
+                                    }
+                                }
+                            }
+                            itemIndex++;
+                        }
+
+                        System.out.println("\n총 상세 정보 개수: " + totalDetailCount);
+
+                        // 실제 추출 로직 (대문자 R 사용!)
                         for (Object resultObj : resultList) {
                             if (resultObj instanceof Map) {
                                 Map<String, Object> result = (Map<String, Object>) resultObj;
-                                Object detailListObj = result.get("retrieveTreatmentInjectionInformationPersonDetailList");
+                                // 대문자 R로 시작하는 필드명 사용
+                                Object detailListObj = result.get("RetrieveTreatmentInjectionInformationPersonDetailList");
 
                                 if (detailListObj instanceof List) {
                                     List<Object> detailList = (List<Object>) detailListObj;
@@ -396,8 +432,8 @@ public class ClaudeAiService {
 
                                             // 가능한 약물명 필드들 시도
                                             String[] possibleDrugFields = {
-                                                    "choBangYakPumMyung",
-                                                    "ChoBangYakPumMyung",
+                                                    "ChoBangYakPumMyung",  // 대문자 C
+                                                    "choBangYakPumMyung",  // 소문자 c
                                                     "drugName",
                                                     "DrugName",
                                                     "medicationName",

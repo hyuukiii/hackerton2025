@@ -328,10 +328,9 @@ public class IntegratedHealthService {
     // 처방조제 데이터만 필터링
     private Object filterPrescriptionData(Object rawData) {
         try {
-            JSONParser parser = new JSONParser();
             JSONObject jsonData;
-
             if (rawData instanceof String) {
+                JSONParser parser = new JSONParser();
                 jsonData = (JSONObject) parser.parse((String) rawData);
             } else {
                 jsonData = (JSONObject) rawData;
@@ -346,14 +345,23 @@ public class IntegratedHealthService {
                     JSONObject record = (JSONObject) item;
                     String jinRyoHyungTae = (String) record.get("JinRyoHyungTae");
 
-                    if ("처방조제".equals(jinRyoHyungTae)) {
-                        filteredList.add(record);
-                    }
+                    // 디버깅을 위해 모든 진료형태 출력
+                    System.out.println("진료형태 발견: " + jinRyoHyungTae);
+
+                    // 임시로 모든 데이터를 포함 (나중에 필요한 것만 필터링)
+                    filteredList.add(record);
+
+                    // 또는 여러 진료형태를 포함하도록 수정
+                    // if ("처방조제".equals(jinRyoHyungTae) ||
+                    //     "외래".equals(jinRyoHyungTae) ||
+                    //     "입원".equals(jinRyoHyungTae)) {
+                    //     filteredList.add(record);
+                    // }
                 }
 
                 // 필터링된 결과로 교체
                 jsonData.put("ResultList", filteredList);
-                System.out.println("처방조제 데이터 필터링 완료: " + filteredList.size() + "건");
+                System.out.println("필터링 완료: " + filteredList.size() + "건 (원본: " + resultList.size() + "건)");
             }
 
             return jsonData;
