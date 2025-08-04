@@ -126,7 +126,7 @@ management:
 # Tilko API 설정 추가
 tilko:
   api:
-    host: https://dev.tilko.net
+    host: https://api.tilko.net
     key: ${TILKO_API_KEY:your-tilko-api-key-here}
 
 # 모델명 :claude-3-sonnet-20240229

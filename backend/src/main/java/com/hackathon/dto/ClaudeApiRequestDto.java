@@ -20,8 +20,8 @@ public class ClaudeApiRequestDto {
 
     private List<Message> messages;
 
-    @JsonProperty("anthropic_version")
-    private String anthropicVersion = "2023-06-01";
+    // @JsonProperty("anthropic_version")
+    // private String anthropicVersion = "2023-06-01";
 
     @Data
     @NoArgsConstructor
